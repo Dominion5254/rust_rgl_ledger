@@ -1,11 +1,13 @@
 use chrono::{NaiveDate, NaiveDateTime};
 use serde::{de, Deserialize, Deserializer};
-use crate::schema::acquisitions;
+use diesel::prelude::*;
+use crate::schema::{acquisitions, dispositions, acquisition_dispositions};
 
-#[derive(Queryable)]
+#[derive(Queryable, Selectable, Debug, PartialEq, Eq)]
+#[diesel(table_name = acquisitions)]
 #[diesel(check_for_backend(diesel::sqlite::Sqlite))]
 pub struct Acquisition {
-    pub id: i64,
+    pub id: i32,
     pub acquisition_date: NaiveDateTime,
     pub satoshis: i64,
     pub undisposed_satoshis: i64,
@@ -81,11 +83,11 @@ where
     Ok(sats)
 }
 
-#[derive(Queryable)]
-#[diesel(table_name = crate::schema::dispositions)]
+#[derive(Queryable, Selectable, Debug)]
+#[diesel(table_name = dispositions)]
 #[diesel(check_for_backend(diesel::sqlite::Sqlite))]
 pub struct Disposition {
-    pub id: i64,
+    pub id: i32,
     pub disposition_date: NaiveDateTime,
     pub satoshis: i64,
     pub undisposed_satoshis: i64,
@@ -93,7 +95,7 @@ pub struct Disposition {
 }
 
 #[derive(Queryable, Insertable, Debug)]
-#[diesel(table_name = crate::schema::dispositions)]
+#[diesel(table_name = dispositions)]
 #[diesel(check_for_backend(diesel::sqlite::Sqlite))]
 pub struct NewDisposition {
     pub disposition_date: NaiveDateTime,
@@ -101,3 +103,23 @@ pub struct NewDisposition {
     pub undisposed_satoshis: i64,
     pub usd_cents_btc_basis: i64,
 }
+
+#[derive(Queryable, Selectable, Identifiable, Insertable, PartialEq, Debug)]
+#[diesel(belongs_to(Acquisition))]
+#[diesel(belongs_to(Disposition))]
+#[diesel(table_name = acquisition_dispositions)]
+#[diesel(primary_key(acquisition_id, disposition_id))]
+pub struct AcquisitionDisposition {
+    pub acquisition_id: i32,
+    pub disposition_id: i32,
+    pub satoshis: i64,
+    pub gaap_rgl: i64,
+    pub tax_rgl: i64,
+    pub term: String,
+}
+
+// #[derive(diesel_derive_enum::DbEnum, Debug, PartialEq)]
+// pub enum Term {
+//     Short,
+//     Long,
+// }

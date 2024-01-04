@@ -1,5 +1,3 @@
-// use diesel::prelude::*;
-// use diesel::sqlite::SqliteConnection;
 use clap::{Parser, Subcommand};
 use rust_rgl_ledger::commands::import::import_transactions;
 
@@ -7,8 +5,14 @@ fn main() {
     let command = Cli::parse();
     match command.subcommand {
         Command::Import { file } => {
-            println!("File: {:?}", file);
-            import_transactions(file);
+            match import_transactions(&file) {
+                Ok(_) => {
+                    println!("Successfully Imported transactions from {:?}", file)
+                }
+                Err(e) => {
+                    println!("Error importing file {:?}: {}", file, e)
+                }
+            };
         }
         _ => { println!("Invalid Command!") }
     }

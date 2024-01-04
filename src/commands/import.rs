@@ -1,13 +1,14 @@
 use std::path::PathBuf;
-use diesel::RunQueryDsl;
+use diesel::prelude::*;
+use core::cmp::min;
 
 use crate::establish_connection;
-use crate::schema::acquisitions::dsl::acquisitions;
-use crate::schema::dispositions::dsl::dispositions;
+use crate::models::AcquisitionDisposition;
+use crate::models::{NewRecord, Acquisition, NewDisposition, NewAcquisition, Disposition};
+use crate::schema::{acquisitions, dispositions, acquisition_dispositions};
+use crate::schema::acquisitions::dsl::*;
 
-use crate::models::{NewRecord, NewDisposition, NewAcquisition};
-
-pub fn import_transactions(file: PathBuf) {
+pub fn import_transactions(file: &PathBuf) -> Result<(), String> {
     let conn = &mut establish_connection();
     let mut rdr = csv::Reader::from_path(&file).expect(format!("Error reading file {:?}", file).as_str());
 
@@ -25,7 +26,7 @@ pub fn import_transactions(file: PathBuf) {
                     usd_cents_btc_fair_value: record.price,
                     usd_cents_btc_impaired_value: record.price,
                 };
-                diesel::insert_into(acquisitions)
+                diesel::insert_into(crate::schema::acquisitions::table)
                     .values(&new_acquisition)
                     .execute(conn)
                     .expect(format!("Error saving acquisition: {:?}", new_acquisition).as_str());
@@ -37,11 +38,66 @@ pub fn import_transactions(file: PathBuf) {
                     undisposed_satoshis: record.bitcoin,
                     usd_cents_btc_basis: record.price,
                 };
-                diesel::insert_into(dispositions)
+                diesel::insert_into(dispositions::table)
                     .values(&new_disposition)
                     .execute(conn)
                     .expect(format!("Error saving acquisition: {:?}", new_disposition).as_str());
             }
         }
     }
+
+    let undisposed_lots: Vec<Disposition> = dispositions::table
+                                                .filter(dispositions::undisposed_satoshis.lt(0))
+                                                .select(Disposition::as_select())
+                                                .load(conn)
+                                                .expect("Error fetching Dispositions");
+    
+    for disp_lot in undisposed_lots {
+        let mut remaining_sat_disposition = disp_lot.undisposed_satoshis;
+
+        while remaining_sat_disposition != 0 {
+            let acq_lot: Acquisition = acquisitions::table
+                                        .filter(acquisitions::undisposed_satoshis.gt(0))
+                                        .select(Acquisition::as_select())
+                                        .limit(1)
+                                        .get_result(conn)
+                                        .expect("Error fetching first undisposed acquisition lot");
+
+            let sats_disposed = min(-remaining_sat_disposition, acq_lot.undisposed_satoshis);
+            let gaap_rgl = sats_disposed * disp_lot.usd_cents_btc_basis - sats_disposed * acq_lot.usd_cents_btc_impaired_value;
+            let tax_rgl = sats_disposed * disp_lot.usd_cents_btc_basis - sats_disposed * acq_lot.usd_cents_btc_basis;
+            let term = disp_lot.disposition_date - acq_lot.acquisition_date;
+
+            if term.num_seconds() < 0 {
+                return Err(String::from("Disposition Date is before earliest Acquisition Date"))
+            }
+
+            let new_acq_disp = AcquisitionDisposition {
+                acquisition_id: acq_lot.id,
+                disposition_id: disp_lot.id,
+                satoshis: sats_disposed,
+                gaap_rgl,
+                tax_rgl,
+                term: if term.num_days().ge(&365) { String::from("long") } else { String::from("short") }
+            };
+
+            diesel::update(acquisitions::table.find(acq_lot.id))
+                .set(undisposed_satoshis.eq(undisposed_satoshis - sats_disposed))
+                .execute(conn)
+                .expect("Error updating Acquisition Lot Undisposed Sats");
+
+            diesel::update(dispositions::table.find(disp_lot.id))
+                .set(crate::schema::dispositions::undisposed_satoshis.eq(crate::schema::dispositions::undisposed_satoshis + sats_disposed))
+                .execute(conn)
+                .expect("Error updating Disposition Lot Undisposed Sats");
+
+            diesel::insert_into(acquisition_dispositions::table)
+                .values(new_acq_disp)
+                .execute(conn)
+                .expect("Error Inserting Acquisition Disposition");
+
+            remaining_sat_disposition += sats_disposed;
+        }
+    }
+    Ok(())
 }
