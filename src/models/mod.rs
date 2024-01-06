@@ -1,7 +1,8 @@
 use chrono::{NaiveDate, NaiveDateTime};
-use serde::{de, Deserialize, Deserializer};
+use rust_decimal::Decimal;
+use serde::{de, Deserialize, Deserializer, Serialize};
 use diesel::prelude::*;
-use crate::schema::{acquisitions, dispositions, acquisition_dispositions};
+use crate::schema::{acquisitions, dispositions, acquisition_dispositions, impairments};
 
 #[derive(Queryable, Selectable, Debug, PartialEq, Eq)]
 #[diesel(table_name = acquisitions)]
@@ -38,7 +39,7 @@ pub struct NewRecord {
     pub price: i64,
 }
 
-fn deserialize_date<'de, D>(deserializer: D) -> Result<NaiveDateTime, D::Error>
+pub fn deserialize_date<'de, D>(deserializer: D) -> Result<NaiveDateTime, D::Error>
 where
     D: Deserializer<'de>,
 {
@@ -118,8 +119,23 @@ pub struct AcquisitionDisposition {
     pub term: String,
 }
 
-// #[derive(diesel_derive_enum::DbEnum, Debug, PartialEq)]
-// pub enum Term {
-//     Short,
-//     Long,
-// }
+#[derive(Queryable, Insertable, Debug, Deserialize)]
+#[diesel(table_name = impairments)]
+#[diesel(check_for_backend(diesel::sqlite::Sqlite))]
+pub struct Impairment {
+    #[serde(deserialize_with = "deserialize_price")]
+    pub impairment_cents: i64,
+    #[serde(deserialize_with = "deserialize_date")]
+    pub date: NaiveDateTime,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "PascalCase")]
+pub struct ImpairmentLoss {
+    pub undisposed_btc: Decimal,
+    pub pre_impairment_btc_price: Decimal,
+    pub post_impairment_btc_price: Decimal,
+    pub pre_impairment_usd_value: Decimal,
+    pub post_impairment_usd_value: Decimal,
+    pub impairment_loss: Decimal,
+}

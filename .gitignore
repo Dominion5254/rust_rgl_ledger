@@ -3,4 +3,5 @@
 .vscode
 /target
 /database
-/import_files
+/import_files/*
+/reports/*

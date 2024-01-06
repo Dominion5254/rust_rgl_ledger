@@ -33,6 +33,14 @@ diesel::table! {
     }
 }
 
+diesel::table! {
+    impairments (id) {
+        id -> Integer,
+        impairment_cents -> BigInt,
+        date -> Timestamp,
+    }
+}
+
 diesel::joinable!(acquisition_dispositions -> acquisitions (acquisition_id));
 diesel::joinable!(acquisition_dispositions -> dispositions (disposition_id));
 
@@ -40,4 +48,5 @@ diesel::allow_tables_to_appear_in_same_query!(
     acquisition_dispositions,
     acquisitions,
     dispositions,
+    impairments,
 );

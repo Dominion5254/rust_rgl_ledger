@@ -1,5 +1,6 @@
 use clap::{Parser, Subcommand};
 use rust_rgl_ledger::commands::import::import_transactions;
+use rust_rgl_ledger::commands::impair::impair_holdings;
 
 fn main() {
     let command = Cli::parse();
@@ -13,8 +14,17 @@ fn main() {
                     println!("Error importing file {:?}: {}", file, e)
                 }
             };
-        }
-        _ => { println!("Invalid Command!") }
+        },
+        Command::Impair { price, date } => {
+            match impair_holdings(&price, &date) {
+                Ok(_) => {
+                    println!("Successfully impaired Bitcoin holdings to {} as of {}", price, date)
+                }
+                Err(_) => {
+                    eprint!("Error impairing bitcoin holdings")
+                }
+            }
+        },
     }
 }
 
@@ -25,7 +35,14 @@ enum Command {
         #[clap(long)]
         file: std::path::PathBuf,
     },
-    Two,
+    Impair {
+        /// The USD price to impair Bitcoin holdings
+        #[clap(long)]
+        price: String,
+        /// The Date to impair Bitcoin holdings
+        #[clap(long)]
+        date: String,
+    },
 }
 
 #[derive(Parser)]
