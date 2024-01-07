@@ -5,7 +5,8 @@ use diesel::prelude::*;
 use crate::{models::{Impairment, Acquisition, ImpairmentLoss}, schema::acquisitions, schema::impairments, establish_connection};
 
 pub fn impair_holdings(price: &String, date: &String) -> Result<(), anyhow::Error> {
-    let impairment: Impairment = serde_json::from_str(&format!(r#"{{ "impairment_cents": "{}", "date": "{}" }}"#, price, date)).expect("Failed to deserialize provided date/price");
+    let mut impairment: Impairment = serde_json::from_str(&format!(r#"{{ "impairment_cents": "{}", "date": "{}" }}"#, price, date)).expect("Failed to deserialize provided date/price");
+    impairment.date = impairment.date.date().and_hms_opt(23, 59, 59).unwrap();
 
     let conn = &mut establish_connection();
 
@@ -59,6 +60,13 @@ pub fn impair_holdings(price: &String, date: &String) -> Result<(), anyhow::Erro
         total_post_impair_usd_value.to_string(),
         total_impairment_loss.to_string()
     ])?;
+
+    diesel::update(acquisitions::table)
+        .filter(acquisitions::usd_cents_btc_impaired_value.gt(impairment.impairment_cents))
+        .filter(acquisitions::acquisition_date.le(impairment.date))
+        .set(acquisitions::usd_cents_btc_impaired_value.eq(impairment.impairment_cents))
+        .execute(conn)
+        .expect("Error updating Acquisition Lots Impaired Value");
 
     Ok(())
 }

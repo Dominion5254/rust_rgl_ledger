@@ -20,8 +20,8 @@ fn main() {
                 Ok(_) => {
                     println!("Successfully impaired Bitcoin holdings to {} as of {}", price, date)
                 }
-                Err(_) => {
-                    eprint!("Error impairing bitcoin holdings")
+                Err(e) => {
+                    eprint!("Error impairing bitcoin holdings: {}", e)
                 }
             }
         },
