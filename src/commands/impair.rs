@@ -18,6 +18,7 @@ pub fn impair_holdings(price: &String, date: &String) -> Result<(), anyhow::Erro
     let impaired_lots: Vec<Acquisition> = acquisitions::table
                             .filter(acquisitions::acquisition_date.le(&impairment.date))
                             .filter(acquisitions::usd_cents_btc_impaired_value.gt(&impairment.impairment_cents))
+                            .filter(acquisitions::undisposed_satoshis.gt(0))
                             .select(Acquisition::as_select())
                             .load(conn)
                             .expect("Error fetching impaired lots");
@@ -36,6 +37,7 @@ pub fn impair_holdings(price: &String, date: &String) -> Result<(), anyhow::Erro
         let impaired_cents_decimal = Decimal::from_i64(impairment.impairment_cents).unwrap();
 
         let impairment_loss = ImpairmentLoss {
+            acquisition_date: lot.acquisition_date,
             undisposed_btc: (lot_undisposed_sats_decimal / dec!(100_000_000)),
             pre_impairment_btc_price: (lot_impaired_value_decimal / dec!(100)).round_dp(2),
             post_impairment_btc_price: (impaired_cents_decimal / dec!(100)).round_dp(2),
@@ -53,6 +55,7 @@ pub fn impair_holdings(price: &String, date: &String) -> Result<(), anyhow::Erro
     }
 
     wtr.write_record(&[
+        String::from(""),
         total_undisposed_btc.to_string(),
         String::from(""),
         String::from(""),
@@ -64,6 +67,7 @@ pub fn impair_holdings(price: &String, date: &String) -> Result<(), anyhow::Erro
     diesel::update(acquisitions::table)
         .filter(acquisitions::usd_cents_btc_impaired_value.gt(impairment.impairment_cents))
         .filter(acquisitions::acquisition_date.le(impairment.date))
+        .filter(acquisitions::undisposed_satoshis.gt(0))
         .set(acquisitions::usd_cents_btc_impaired_value.eq(impairment.impairment_cents))
         .execute(conn)
         .expect("Error updating Acquisition Lots Impaired Value");

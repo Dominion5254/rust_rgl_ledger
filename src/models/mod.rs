@@ -132,6 +132,7 @@ pub struct Impairment {
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "PascalCase")]
 pub struct ImpairmentLoss {
+    pub acquisition_date: NaiveDateTime,
     pub undisposed_btc: Decimal,
     pub pre_impairment_btc_price: Decimal,
     pub post_impairment_btc_price: Decimal,
