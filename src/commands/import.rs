@@ -64,8 +64,8 @@ pub fn import_transactions(file: &PathBuf) -> Result<(), String> {
                                         .expect("Error fetching first undisposed acquisition lot");
 
             let sats_disposed = min(-remaining_sat_disposition, acq_lot.undisposed_satoshis);
-            let gaap_rgl = sats_disposed * disp_lot.usd_cents_btc_basis - sats_disposed * acq_lot.usd_cents_btc_impaired_value;
-            let tax_rgl = sats_disposed * disp_lot.usd_cents_btc_basis - sats_disposed * acq_lot.usd_cents_btc_basis;
+            let gaap_rgl = sats_disposed * disp_lot.usd_cents_btc_basis / 100_000_000 - sats_disposed * acq_lot.usd_cents_btc_impaired_value / 100_000_000;
+            let tax_rgl = sats_disposed * disp_lot.usd_cents_btc_basis / 100_000_000 - sats_disposed * acq_lot.usd_cents_btc_basis / 100_000_000;
             let term = disp_lot.disposition_date - acq_lot.acquisition_date;
 
             if term.num_seconds() < 0 {
