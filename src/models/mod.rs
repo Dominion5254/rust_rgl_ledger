@@ -4,7 +4,7 @@ use serde::{de, Deserialize, Deserializer, Serialize};
 use diesel::prelude::*;
 use crate::schema::{acquisitions, dispositions, acquisition_dispositions, impairments};
 
-#[derive(Queryable, Selectable, Debug, PartialEq, Eq)]
+#[derive(Queryable, Selectable, Debug, PartialEq, Eq, Serialize)]
 #[diesel(table_name = acquisitions)]
 #[diesel(check_for_backend(diesel::sqlite::Sqlite))]
 pub struct Acquisition {
@@ -147,6 +147,12 @@ pub struct ReportDates {
     pub ending_date: NaiveDateTime,
 }
 
+#[derive(Serialize, Deserialize, Debug)]
+pub struct HoldingsDate {
+    #[serde(deserialize_with = "deserialize_date")]
+    pub date: NaiveDateTime,
+}
+
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "PascalCase")]
 pub struct ImpairmentLoss {
@@ -172,4 +178,14 @@ pub struct RGL {
     pub gaap_rgl: Decimal,
     pub impairment_disposed: Decimal,
     pub term: String,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "PascalCase")]
+pub struct Holding {
+    pub acquisition_date: NaiveDateTime,
+    pub btc: Decimal,
+    pub undisposed_btc: Decimal,
+    pub usd_basis: Decimal,
+    pub usd_impaired_value: Decimal,
 }

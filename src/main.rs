@@ -2,6 +2,7 @@ use clap::{Parser, Subcommand};
 use rust_rgl_ledger::commands::import::import_transactions;
 use rust_rgl_ledger::commands::impair::impair_holdings;
 use rust_rgl_ledger::commands::report::report;
+use rust_rgl_ledger::commands::holdings::holdings;
 
 fn main() {
     let command = Cli::parse();
@@ -36,6 +37,16 @@ fn main() {
                 }
             }
         },
+        Command::Holdings { date } => {
+            match holdings(&date) {
+                Ok(_) => {
+                    println!("Holdings report run for the period ended {}", date)
+                }
+                Err(e) => {
+                    eprint!("Error creating holdings report: {}", e)
+                }
+            }
+        },
     }
 }
 
@@ -61,6 +72,11 @@ enum Command {
         /// The ending date for RGL report
         #[clap(long)]
         end: String,
+    },
+    Holdings {
+        /// The ending date of the holdings report
+        #[clap(long)]
+        date: String,
     },
 }
 
