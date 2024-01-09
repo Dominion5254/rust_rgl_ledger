@@ -1,5 +1,0 @@
-## Installation
-* Download the RGL Ledger using `git clone && cd rust_rgl_ledger`.
-* Specify the `DATABASE_URL` with the command `echo DATABASE_URL=/Users/name/path/to/rust_rgl_ledger/database/rgl_db.sqlite3 > .env`
-* Build using `cargo build --release`.
-* Install systemwide with `cargo install --path .`.

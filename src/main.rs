@@ -52,11 +52,13 @@ fn main() {
 
 #[derive(Subcommand)]
 enum Command {
+    /// Import a specified CSV file at the provided path
     Import {
-        /// The file to import
+        /// The file to import including three columns: Date, Bitcoin, Price
         #[clap(long)]
         file: std::path::PathBuf,
     },
+    /// Impair Bitcoin holdings to a specified price as of a specified date
     Impair {
         /// The USD price to impair Bitcoin holdings
         #[clap(long)]
@@ -65,6 +67,7 @@ enum Command {
         #[clap(long)]
         date: String,
     },
+    /// Export a CSV report of GAAP and Tax Realized Gain/Loss activity for a specfied period
     Report {
         /// The beginning date for RGL report
         #[clap(long)]
@@ -73,6 +76,7 @@ enum Command {
         #[clap(long)]
         end: String,
     },
+    /// Export a CSV report of Bitcoin holdings as of a specified date
     Holdings {
         /// The ending date of the holdings report
         #[clap(long)]
