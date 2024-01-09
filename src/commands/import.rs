@@ -64,8 +64,11 @@ pub fn import_transactions(file: &PathBuf) -> Result<(), String> {
                                         .expect("Error fetching first undisposed acquisition lot");
 
             let sats_disposed = min(-remaining_sat_disposition, acq_lot.undisposed_satoshis);
-            let gaap_rgl = sats_disposed * disp_lot.usd_cents_btc_basis / 100_000_000 - sats_disposed * acq_lot.usd_cents_btc_impaired_value / 100_000_000;
-            let tax_rgl = sats_disposed * disp_lot.usd_cents_btc_basis / 100_000_000 - sats_disposed * acq_lot.usd_cents_btc_basis / 100_000_000;
+            let gaap_basis: i64 = sats_disposed * acq_lot.usd_cents_btc_impaired_value / 100_000_000;
+            let tax_basis:i64 = sats_disposed * acq_lot.usd_cents_btc_basis / 100_000_000;
+            let fv_disposed_cents = sats_disposed * disp_lot.usd_cents_btc_basis / 100_000_000;
+            let gaap_rgl = fv_disposed_cents - gaap_basis;
+            let tax_rgl = fv_disposed_cents - tax_basis;
             let term = disp_lot.disposition_date - acq_lot.acquisition_date;
 
             if term.num_seconds() < 0 {
@@ -76,7 +79,9 @@ pub fn import_transactions(file: &PathBuf) -> Result<(), String> {
                 acquisition_id: acq_lot.id,
                 disposition_id: disp_lot.id,
                 satoshis: sats_disposed,
+                gaap_basis,
                 gaap_rgl,
+                tax_basis,
                 tax_rgl,
                 term: if term.num_days().ge(&365) { String::from("long") } else { String::from("short") }
             };

@@ -1,6 +1,7 @@
 use clap::{Parser, Subcommand};
 use rust_rgl_ledger::commands::import::import_transactions;
 use rust_rgl_ledger::commands::impair::impair_holdings;
+use rust_rgl_ledger::commands::report::report;
 
 fn main() {
     let command = Cli::parse();
@@ -25,6 +26,16 @@ fn main() {
                 }
             }
         },
+        Command::Report { beg, end } => {
+            match report(&beg, &end) {
+                Ok(_) => {
+                    println!("Realized gain/loss report run for the period {} - {}", beg, end)
+                }
+                Err(e) => {
+                    eprint!("Error creating realized gain/loss report: {}", e)
+                }
+            }
+        },
     }
 }
 
@@ -42,6 +53,14 @@ enum Command {
         /// The Date to impair Bitcoin holdings
         #[clap(long)]
         date: String,
+    },
+    Report {
+        /// The beginning date for RGL report
+        #[clap(long)]
+        beg: String,
+        /// The ending date for RGL report
+        #[clap(long)]
+        end: String,
     },
 }
 

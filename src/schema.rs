@@ -5,7 +5,9 @@ diesel::table! {
         acquisition_id -> Integer,
         disposition_id -> Integer,
         satoshis -> BigInt,
+        gaap_basis -> BigInt,
         gaap_rgl -> BigInt,
+        tax_basis -> BigInt,
         tax_rgl -> BigInt,
         term -> Text,
     }

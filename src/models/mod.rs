@@ -43,7 +43,15 @@ pub fn deserialize_date<'de, D>(deserializer: D) -> Result<NaiveDateTime, D::Err
 where
     D: Deserializer<'de>,
 {
-    let date_formats = ["%m/%d/%Y %H:%M:%S", "%m/%d/%y %H:%M:%S", "%m/%d/%y", "%m/%d/%Y"];
+    let date_formats = [
+        "%m/%d/%Y %H:%M:%S",
+        "%m/%d/%y %H:%M:%S",
+        "%m/%d/%y %I:%M %p",
+        "%m/%d/%y",
+        "%m/%d/%Y",
+        "%y-%m-%d",
+        "%Y-%m-%d",
+    ];
 
     let date_str = String::deserialize(deserializer)?;
 
@@ -114,7 +122,9 @@ pub struct AcquisitionDisposition {
     pub acquisition_id: i32,
     pub disposition_id: i32,
     pub satoshis: i64,
+    pub gaap_basis: i64,
     pub gaap_rgl: i64,
+    pub tax_basis: i64,
     pub tax_rgl: i64,
     pub term: String,
 }
@@ -129,6 +139,14 @@ pub struct Impairment {
     pub date: NaiveDateTime,
 }
 
+#[derive(Serialize, Deserialize, Debug)]
+pub struct ReportDates {
+    #[serde(deserialize_with = "deserialize_date")]
+    pub beginning_date: NaiveDateTime,
+    #[serde(deserialize_with = "deserialize_date")]
+    pub ending_date: NaiveDateTime,
+}
+
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "PascalCase")]
 pub struct ImpairmentLoss {
@@ -139,4 +157,19 @@ pub struct ImpairmentLoss {
     pub pre_impairment_usd_value: Decimal,
     pub post_impairment_usd_value: Decimal,
     pub impairment_loss: Decimal,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "PascalCase")]
+pub struct RGL {
+    pub acquisition_date: NaiveDateTime,
+    pub disposition_date: NaiveDateTime,
+    pub disposed_btc: Decimal,
+    pub disposal_fmv: Decimal,
+    pub tax_basis: Decimal,
+    pub tax_rgl: Decimal,
+    pub gaap_basis: Decimal,
+    pub gaap_rgl: Decimal,
+    pub impairment_disposed: Decimal,
+    pub term: String,
 }
