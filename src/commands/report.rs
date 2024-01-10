@@ -83,7 +83,7 @@ fn report_term(wtr: &mut Writer<File>, beg: NaiveDateTime, end: NaiveDateTime, t
         total_tax_basis.to_string(),
         total_tax_rgl.to_string(),
         total_gaap_basis.to_string(),
-        total_tax_rgl.to_string(),
+        total_gaap_rgl.to_string(),
         total_impairment_disposed.to_string(),
         term.clone(),
     ]).unwrap();
