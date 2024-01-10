@@ -28,13 +28,14 @@ pub fn holdings(date: &String) -> Result<(), anyhow::Error> {
 
     for lot in holdings {
         let btc = Decimal::from_i64(lot.satoshis).unwrap() / dec!(100_000_000);
+        let undisposed_btc = Decimal::from_i64(lot.undisposed_satoshis).unwrap() / dec!(100_000_000);
 
         let holding = Holding {
             acquisition_date: lot.acquisition_date,
             btc,
-            undisposed_btc: Decimal::from_i64(lot.undisposed_satoshis).unwrap() / dec!(100_000_000),
-            usd_basis: (Decimal::from_i64(lot.usd_cents_btc_basis).unwrap() / dec!(100) * btc).round_dp(2),
-            usd_impaired_value: (Decimal::from_i64(lot.usd_cents_btc_impaired_value).unwrap() / dec!(100) * btc).round_dp(2),
+            undisposed_btc,
+            usd_basis: (Decimal::from_i64(lot.usd_cents_btc_basis).unwrap() / dec!(100) * undisposed_btc).round_dp(2),
+            usd_impaired_value: (Decimal::from_i64(lot.usd_cents_btc_impaired_value).unwrap() / dec!(100) * undisposed_btc).round_dp(2),
         };
         total_btc += holding.btc;
         total_undisposed_btc += holding.undisposed_btc;
