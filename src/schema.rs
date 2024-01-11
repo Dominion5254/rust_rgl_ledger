@@ -14,6 +14,13 @@ diesel::table! {
 }
 
 diesel::table! {
+    acquisition_fair_values (acquisition_id, fair_value_id) {
+        acquisition_id -> Integer,
+        fair_value_id -> Integer,
+    }
+}
+
+diesel::table! {
     acquisitions (id) {
         id -> Integer,
         acquisition_date -> Timestamp,
@@ -36,6 +43,14 @@ diesel::table! {
 }
 
 diesel::table! {
+    fair_values (id) {
+        id -> Integer,
+        fair_value_cents -> BigInt,
+        date -> Timestamp,
+    }
+}
+
+diesel::table! {
     impairments (id) {
         id -> Integer,
         impairment_cents -> BigInt,
@@ -45,10 +60,14 @@ diesel::table! {
 
 diesel::joinable!(acquisition_dispositions -> acquisitions (acquisition_id));
 diesel::joinable!(acquisition_dispositions -> dispositions (disposition_id));
+diesel::joinable!(acquisition_fair_values -> acquisitions (acquisition_id));
+diesel::joinable!(acquisition_fair_values -> fair_values (fair_value_id));
 
 diesel::allow_tables_to_appear_in_same_query!(
     acquisition_dispositions,
+    acquisition_fair_values,
     acquisitions,
     dispositions,
+    fair_values,
     impairments,
 );

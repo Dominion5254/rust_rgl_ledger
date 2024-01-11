@@ -2,7 +2,7 @@ use chrono::{NaiveDate, NaiveDateTime};
 use rust_decimal::Decimal;
 use serde::{de, Deserialize, Deserializer, Serialize};
 use diesel::prelude::*;
-use crate::schema::{acquisitions, dispositions, acquisition_dispositions, impairments};
+use crate::schema::{acquisitions, dispositions, acquisition_dispositions, impairments, fair_values};
 
 #[derive(Queryable, Selectable, Debug, PartialEq, Eq, Serialize)]
 #[diesel(table_name = acquisitions)]
@@ -188,4 +188,34 @@ pub struct Holding {
     pub undisposed_btc: Decimal,
     pub usd_basis: Decimal,
     pub usd_impaired_value: Decimal,
+}
+
+#[derive(Queryable, Selectable, Debug, Deserialize)]
+#[diesel(table_name = fair_values)]
+#[diesel(check_for_backend(diesel::sqlite::Sqlite))]
+pub struct FairValue {
+    pub id: i32,
+    pub fair_value_cents: i64,
+    pub date: NaiveDateTime,
+}
+
+#[derive(Queryable, Insertable, Debug, Deserialize)]
+#[diesel(table_name = fair_values)]
+pub struct NewFairValue {
+    #[serde(deserialize_with = "deserialize_price")]
+    pub fair_value_cents: i64,
+    #[serde(deserialize_with = "deserialize_date")]
+    pub date: NaiveDateTime,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "PascalCase")]
+pub struct FairValueHolding {
+    pub acquisition_date: NaiveDateTime,
+    pub btc: Decimal,
+    pub undisposed_btc: Decimal,
+    pub usd_basis: Decimal,
+    pub previous_usd_fair_value: Decimal,
+    pub current_usd_fair_value: Decimal,
+    pub fair_value_adjustment: Decimal,
 }

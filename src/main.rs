@@ -3,6 +3,7 @@ use rust_rgl_ledger::commands::import::import_transactions;
 use rust_rgl_ledger::commands::impair::impair_holdings;
 use rust_rgl_ledger::commands::report::report;
 use rust_rgl_ledger::commands::holdings::holdings;
+use rust_rgl_ledger::commands::mark_to_market::mark_to_market;
 
 fn main() {
     let command = Cli::parse();
@@ -47,6 +48,17 @@ fn main() {
                 }
             }
         },
+        Command::MarkToMarket { price, date } => {
+            match mark_to_market(&price, &date) {
+                Ok(_) => {
+                    println!("Successfully adjusted Bitcoin holdings to {} as of {}", price, &date);
+                    println!("Mark to Market report saved to ./reports/mark-to-market-{}", date);
+                }
+                Err(e) => {
+                    eprint!("Error marking to market bitcoin holdings: {}", e)
+                }
+            }
+        },
     }
 }
 
@@ -82,6 +94,15 @@ enum Command {
         #[clap(long)]
         date: String,
     },
+    /// Mark holdings to provided market price
+    MarkToMarket {
+        /// The USD price to value Bitcoin holdings
+        #[clap(long)]
+        price: String,
+        /// The Date to mark holdings to Fair Value
+        #[clap(long)]
+        date: String,
+    }
 }
 
 #[derive(Parser)]
