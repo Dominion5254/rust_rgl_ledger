@@ -2,7 +2,7 @@ use chrono::{NaiveDate, NaiveDateTime};
 use rust_decimal::Decimal;
 use serde::{de, Deserialize, Deserializer, Serialize};
 use diesel::prelude::*;
-use crate::schema::{acquisitions, dispositions, acquisition_dispositions, impairments, fair_values};
+use crate::schema::{acquisitions, dispositions, acquisition_dispositions, fair_values};
 
 #[derive(Queryable, Selectable, Debug, PartialEq, Eq, Serialize)]
 #[diesel(table_name = acquisitions)]
@@ -14,7 +14,6 @@ pub struct Acquisition {
     pub undisposed_satoshis: i64,
     pub usd_cents_btc_basis: i64,
     pub usd_cents_btc_fair_value: i64,
-    pub usd_cents_btc_impaired_value: i64,
 }
 
 #[derive(Insertable, Debug)]
@@ -25,7 +24,6 @@ pub struct NewAcquisition {
     pub undisposed_satoshis: i64,
     pub usd_cents_btc_basis: i64,
     pub usd_cents_btc_fair_value: i64,
-    pub usd_cents_btc_impaired_value: i64,
 }
 
 #[derive(Debug, Deserialize)]
@@ -46,6 +44,7 @@ where
     let date_formats = [
         "%m/%d/%Y %H:%M:%S",
         "%m/%d/%y %H:%M:%S",
+        "%Y-%m-%d %H:%M:%S",
         "%m/%d/%y %I:%M %p",
         "%m/%d/%y",
         "%m/%d/%Y",
@@ -129,16 +128,6 @@ pub struct AcquisitionDisposition {
     pub term: String,
 }
 
-#[derive(Queryable, Insertable, Debug, Deserialize)]
-#[diesel(table_name = impairments)]
-#[diesel(check_for_backend(diesel::sqlite::Sqlite))]
-pub struct Impairment {
-    #[serde(deserialize_with = "deserialize_price")]
-    pub impairment_cents: i64,
-    #[serde(deserialize_with = "deserialize_date")]
-    pub date: NaiveDateTime,
-}
-
 #[derive(Serialize, Deserialize, Debug)]
 pub struct ReportDates {
     #[serde(deserialize_with = "deserialize_date")]
@@ -155,18 +144,6 @@ pub struct HoldingsDate {
 
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "PascalCase")]
-pub struct ImpairmentLoss {
-    pub acquisition_date: NaiveDateTime,
-    pub undisposed_btc: Decimal,
-    pub pre_impairment_btc_price: Decimal,
-    pub post_impairment_btc_price: Decimal,
-    pub pre_impairment_usd_value: Decimal,
-    pub post_impairment_usd_value: Decimal,
-    pub impairment_loss: Decimal,
-}
-
-#[derive(Debug, Serialize)]
-#[serde(rename_all = "PascalCase")]
 pub struct RGL {
     pub acquisition_date: NaiveDateTime,
     pub disposition_date: NaiveDateTime,
@@ -176,7 +153,7 @@ pub struct RGL {
     pub tax_rgl: Decimal,
     pub gaap_basis: Decimal,
     pub gaap_rgl: Decimal,
-    pub impairment_disposed: Decimal,
+    pub fair_value_disposed: Decimal,
     pub term: String,
 }
 
@@ -187,7 +164,7 @@ pub struct Holding {
     pub btc: Decimal,
     pub undisposed_btc: Decimal,
     pub usd_basis: Decimal,
-    pub usd_impaired_value: Decimal,
+    pub usd_fair_value: Decimal,
 }
 
 #[derive(Queryable, Selectable, Debug, Deserialize)]

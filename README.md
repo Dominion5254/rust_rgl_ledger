@@ -1,5 +1,5 @@
 # Rust RGL Ledger
-This project provides a CLI interface for tracking Bitcoin acquisitions/dispositions and associated realized gains and losses for both GAAP and Tax purposes using the FIFO methodology. GAAP RGL are calculated using impaired asset values, while Tax RGL are calculated the original basis.
+This project provides a CLI interface for tracking Bitcoin acquisitions/dispositions and associated realized gains and losses for both GAAP and Tax purposes using the FIFO methodology. GAAP RGL are calculated using fair value, while Tax RGL are calculated the original basis.
 
 ## Installation
 * Download the RGL Ledger using `git clone && cd rust_rgl_ledger`.

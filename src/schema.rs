@@ -28,7 +28,6 @@ diesel::table! {
         undisposed_satoshis -> BigInt,
         usd_cents_btc_basis -> BigInt,
         usd_cents_btc_fair_value -> BigInt,
-        usd_cents_btc_impaired_value -> BigInt,
     }
 }
 
@@ -50,14 +49,6 @@ diesel::table! {
     }
 }
 
-diesel::table! {
-    impairments (id) {
-        id -> Integer,
-        impairment_cents -> BigInt,
-        date -> Timestamp,
-    }
-}
-
 diesel::joinable!(acquisition_dispositions -> acquisitions (acquisition_id));
 diesel::joinable!(acquisition_dispositions -> dispositions (disposition_id));
 diesel::joinable!(acquisition_fair_values -> acquisitions (acquisition_id));
@@ -69,5 +60,4 @@ diesel::allow_tables_to_appear_in_same_query!(
     acquisitions,
     dispositions,
     fair_values,
-    impairments,
 );

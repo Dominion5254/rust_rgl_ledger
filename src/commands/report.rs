@@ -43,13 +43,13 @@ fn report_term(wtr: &mut Writer<File>, beg: NaiveDateTime, end: NaiveDateTime, t
     let mut total_tax_rgl = dec!(0);
     let mut total_gaap_basis = dec!(0);
     let mut total_gaap_rgl = dec!(0);
-    let mut total_impairment_disposed = dec!(0);
+    let mut total_fair_value_disposed = dec!(0);
 
     for acq_disp in acq_disps {
         let sats_dec = Decimal::from_i64(acq_disp.2.satoshis).unwrap() / dec!(100_000_000);
         let tax_basis = (Decimal::from_i64(acq_disp.2.tax_basis).unwrap() / dec!(100)).round_dp(2);
         let gaap_basis = (Decimal::from_i64(acq_disp.2.gaap_basis).unwrap() / dec!(100)).round_dp(2);
-        let impairment_disposed: Decimal = tax_basis - gaap_basis;
+        let fair_value_disposed: Decimal = tax_basis - gaap_basis;
 
         let rgl = RGL {
             acquisition_date: acq_disp.1.acquisition_date,
@@ -60,7 +60,7 @@ fn report_term(wtr: &mut Writer<File>, beg: NaiveDateTime, end: NaiveDateTime, t
             tax_rgl:( Decimal::from_i64(acq_disp.2.tax_rgl).unwrap() / dec!(100)).round_dp(2),
             gaap_basis,
             gaap_rgl: (Decimal::from_i64(acq_disp.2.gaap_rgl).unwrap() / dec!(100)).round_dp(2),
-            impairment_disposed,
+            fair_value_disposed,
             term: term.clone(),
         };
 
@@ -70,7 +70,7 @@ fn report_term(wtr: &mut Writer<File>, beg: NaiveDateTime, end: NaiveDateTime, t
         total_tax_rgl += rgl.tax_rgl;
         total_gaap_basis += rgl.gaap_basis;
         total_gaap_rgl += rgl.gaap_rgl;
-        total_impairment_disposed += rgl.impairment_disposed;
+        total_fair_value_disposed += rgl.fair_value_disposed;
 
         wtr.serialize(rgl).unwrap();
     }
@@ -84,7 +84,7 @@ fn report_term(wtr: &mut Writer<File>, beg: NaiveDateTime, end: NaiveDateTime, t
         total_tax_rgl.to_string(),
         total_gaap_basis.to_string(),
         total_gaap_rgl.to_string(),
-        total_impairment_disposed.to_string(),
+        total_fair_value_disposed.to_string(),
         term.clone(),
     ]).unwrap();
 

@@ -24,7 +24,6 @@ pub fn import_transactions(file: &PathBuf) -> Result<(), String> {
                     undisposed_satoshis: record.bitcoin,
                     usd_cents_btc_basis: record.price,
                     usd_cents_btc_fair_value: record.price,
-                    usd_cents_btc_impaired_value: record.price,
                 };
                 diesel::insert_into(crate::schema::acquisitions::table)
                     .values(&new_acquisition)
@@ -64,7 +63,7 @@ pub fn import_transactions(file: &PathBuf) -> Result<(), String> {
                                         .expect("Error fetching first undisposed acquisition lot");
 
             let sats_disposed = min(-remaining_sat_disposition, acq_lot.undisposed_satoshis);
-            let gaap_basis: i64 = sats_disposed * acq_lot.usd_cents_btc_impaired_value / 100_000_000;
+            let gaap_basis: i64 = sats_disposed * acq_lot.usd_cents_btc_fair_value / 100_000_000;
             let tax_basis:i64 = sats_disposed * acq_lot.usd_cents_btc_basis / 100_000_000;
             let fv_disposed_cents = sats_disposed * disp_lot.usd_cents_btc_basis / 100_000_000;
             let gaap_rgl = fv_disposed_cents - gaap_basis;

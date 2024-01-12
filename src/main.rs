@@ -1,6 +1,5 @@
 use clap::{Parser, Subcommand};
 use rust_rgl_ledger::commands::import::import_transactions;
-use rust_rgl_ledger::commands::impair::impair_holdings;
 use rust_rgl_ledger::commands::report::report;
 use rust_rgl_ledger::commands::holdings::holdings;
 use rust_rgl_ledger::commands::mark_to_market::mark_to_market;
@@ -17,16 +16,6 @@ fn main() {
                     println!("Error importing file {:?}: {}", file, e)
                 }
             };
-        },
-        Command::Impair { price, date } => {
-            match impair_holdings(&price, &date) {
-                Ok(_) => {
-                    println!("Successfully impaired Bitcoin holdings to {} as of {}", price, date)
-                }
-                Err(e) => {
-                    eprint!("Error impairing bitcoin holdings: {}", e)
-                }
-            }
         },
         Command::Report { beg, end } => {
             match report(&beg, &end) {
@@ -69,15 +58,6 @@ enum Command {
         /// The file to import including three columns: Date, Bitcoin, Price
         #[clap(long)]
         file: std::path::PathBuf,
-    },
-    /// Impair Bitcoin holdings to a specified price as of a specified date
-    Impair {
-        /// The USD price to impair Bitcoin holdings
-        #[clap(long)]
-        price: String,
-        /// The Date to impair Bitcoin holdings
-        #[clap(long)]
-        date: String,
     },
     /// Export a CSV report of GAAP and Tax Realized Gain/Loss activity for a specfied period
     Report {
