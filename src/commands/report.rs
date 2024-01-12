@@ -49,7 +49,7 @@ fn report_term(wtr: &mut Writer<File>, beg: NaiveDateTime, end: NaiveDateTime, t
         let sats_dec = Decimal::from_i64(acq_disp.2.satoshis).unwrap() / dec!(100_000_000);
         let tax_basis = (Decimal::from_i64(acq_disp.2.tax_basis).unwrap() / dec!(100)).round_dp(2);
         let gaap_basis = (Decimal::from_i64(acq_disp.2.gaap_basis).unwrap() / dec!(100)).round_dp(2);
-        let fair_value_disposed: Decimal = tax_basis - gaap_basis;
+        let fair_value_disposed: Decimal = -(tax_basis - gaap_basis);
 
         let rgl = RGL {
             acquisition_date: acq_disp.1.acquisition_date,
