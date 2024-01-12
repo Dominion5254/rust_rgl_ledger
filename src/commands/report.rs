@@ -75,29 +75,35 @@ fn report_term(wtr: &mut Writer<File>, beg: NaiveDateTime, end: NaiveDateTime, t
         wtr.serialize(rgl).unwrap();
     }
 
-    wtr.write_record(&[
-        String::from(""),
-        String::from(""),
-        total_disposed_btc.to_string(),
-        total_disposal_fmv.to_string(),
-        total_tax_basis.to_string(),
-        total_tax_rgl.to_string(),
-        total_gaap_basis.to_string(),
-        total_gaap_rgl.to_string(),
-        total_fair_value_disposed.to_string(),
-        term.clone(),
-    ]).unwrap();
+    match total_disposed_btc.eq(&dec!(0)) {
+        true => {},
+        false => {
+            wtr.write_record(&[
+                String::from(""),
+                String::from(""),
+                total_disposed_btc.to_string(),
+                total_disposal_fmv.to_string(),
+                total_tax_basis.to_string(),
+                total_tax_rgl.to_string(),
+                total_gaap_basis.to_string(),
+                total_gaap_rgl.to_string(),
+                total_fair_value_disposed.to_string(),
+                term.clone(),
+            ]).unwrap();
+        
+            wtr.write_record(&[
+                String::from(""),
+                String::from(""),
+                String::from(""),
+                String::from(""),
+                String::from(""),
+                String::from(""),
+                String::from(""),
+                String::from(""),
+                String::from(""),
+                String::from(""),
+            ]).unwrap();
+        }
+    }
 
-    wtr.write_record(&[
-        String::from(""),
-        String::from(""),
-        String::from(""),
-        String::from(""),
-        String::from(""),
-        String::from(""),
-        String::from(""),
-        String::from(""),
-        String::from(""),
-        String::from(""),
-    ]).unwrap();
 }
