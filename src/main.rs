@@ -56,31 +56,31 @@ enum Command {
     /// Import a specified CSV file at the provided path
     Import {
         /// The file to import including three columns: Date, Bitcoin, Price
-        #[clap(long)]
+        #[clap(long, short)]
         file: std::path::PathBuf,
     },
     /// Export a CSV report of GAAP and Tax Realized Gain/Loss activity for a specfied period
     Report {
         /// The beginning date for RGL report
-        #[clap(long)]
+        #[clap(long, short)]
         beg: String,
         /// The ending date for RGL report
-        #[clap(long)]
+        #[clap(long, short)]
         end: String,
     },
     /// Export a CSV report of Bitcoin holdings as of a specified date
     Holdings {
         /// The ending date of the holdings report
-        #[clap(long)]
+        #[clap(long, short)]
         date: String,
     },
     /// Mark holdings to provided market price
     MarkToMarket {
         /// The USD price to value Bitcoin holdings
-        #[clap(long)]
+        #[clap(long, short)]
         price: String,
         /// The Date to mark holdings to Fair Value
-        #[clap(long)]
+        #[clap(long, short)]
         date: String,
     }
 }
