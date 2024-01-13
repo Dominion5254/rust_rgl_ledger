@@ -42,8 +42,8 @@ where
     D: Deserializer<'de>,
 {
     let date_formats = [
-        "%m/%d/%Y %H:%M:%S",
         "%m/%d/%y %H:%M:%S",
+        "%m/%d/%Y %H:%M:%S",
         "%Y-%m-%d %H:%M:%S",
         "%m/%d/%y %I:%M %p",
         "%m/%d/%y",
