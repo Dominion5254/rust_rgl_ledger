@@ -59,7 +59,7 @@ enum Command {
         #[clap(long, short)]
         file: std::path::PathBuf,
     },
-    /// Export a CSV report of GAAP and Tax Realized Gain/Loss activity for a specfied period
+    /// Export a CSV report of GAAP and Tax Realized Gain/Loss activity for a specfied period to the 'reports' directory
     Report {
         /// The beginning date for RGL report
         #[clap(long, short)]
@@ -68,13 +68,13 @@ enum Command {
         #[clap(long, short)]
         end: String,
     },
-    /// Export a CSV report of Bitcoin holdings as of a specified date
+    /// Export a CSV report of Bitcoin holdings as of a specified date to the 'reports' directory
     Holdings {
         /// The ending date of the holdings report
         #[clap(long, short)]
         date: String,
     },
-    /// Mark holdings to provided market price
+    /// Mark holdings to provided market price and export mark-to-market report to 'reports' directory
     MarkToMarket {
         /// The USD price to value Bitcoin holdings
         #[clap(long, short)]
