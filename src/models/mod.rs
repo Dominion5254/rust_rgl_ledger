@@ -4,7 +4,7 @@ use serde::{de, Deserialize, Deserializer, Serialize};
 use diesel::prelude::*;
 use crate::schema::{acquisitions, dispositions, acquisition_dispositions, fair_values};
 
-#[derive(Queryable, Selectable, Debug, PartialEq, Eq, Serialize)]
+#[derive(Queryable, Selectable, Debug, PartialEq, Eq, Serialize, Identifiable)]
 #[diesel(table_name = acquisitions)]
 #[diesel(check_for_backend(diesel::sqlite::Sqlite))]
 pub struct Acquisition {
@@ -91,7 +91,7 @@ where
     Ok(sats)
 }
 
-#[derive(Queryable, Selectable, Debug)]
+#[derive(Queryable, Selectable, Debug, Identifiable)]
 #[diesel(table_name = dispositions)]
 #[diesel(check_for_backend(diesel::sqlite::Sqlite))]
 pub struct Disposition {
@@ -112,7 +112,7 @@ pub struct NewDisposition {
     pub usd_cents_btc_basis: i64,
 }
 
-#[derive(Queryable, Selectable, Identifiable, Insertable, PartialEq, Debug)]
+#[derive(Queryable, Selectable, Identifiable, Insertable, PartialEq, Debug, Associations)]
 #[diesel(belongs_to(Acquisition))]
 #[diesel(belongs_to(Disposition))]
 #[diesel(table_name = acquisition_dispositions)]
