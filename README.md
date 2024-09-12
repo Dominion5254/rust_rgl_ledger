@@ -24,4 +24,3 @@ The file to be imported should have 3 columns with the below headers exactly as 
 
 ## Limitations
 * At this time, rust_rgl_ledger is only configured to work using a sqlite database.
-* While the holdings report will include all acquisitions up to the specified date, the UndisposedBTC values *will* consider any dispositions after the specified date. i.e. if a holdings report is run as of 6/30/23, the UndisposedBTC values will consider dispositions from 7/1/23 and beyond.
