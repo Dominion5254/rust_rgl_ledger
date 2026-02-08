@@ -8,6 +8,12 @@ fn parse_record(date: &str, bitcoin: &str, price: &str) -> NewRecord {
     rdr.deserialize::<NewRecord>().next().unwrap().unwrap()
 }
 
+fn parse_record_with_wallet(date: &str, bitcoin: &str, price: &str, wallet: &str) -> NewRecord {
+    let csv_data = format!("Date,Bitcoin,Price,Wallet\n{},\"{}\",\"{}\",{}\n", date, bitcoin, price, wallet);
+    let mut rdr = csv::ReaderBuilder::new().from_reader(csv_data.as_bytes());
+    rdr.deserialize::<NewRecord>().next().unwrap().unwrap()
+}
+
 // --- Date format tests ---
 
 #[test]
@@ -86,13 +92,24 @@ fn test_bitcoin_small() {
     assert_eq!(record.bitcoin, 1);
 }
 
+// --- Wallet tests ---
+
+#[test]
+fn test_csv_backward_compat_no_wallet() {
+    let record = parse_record("01/01/24", "1.00000000", "$50,000.00");
+    assert_eq!(record.wallet, "default", "Missing wallet column should default to 'default'");
+}
+
+#[test]
+fn test_csv_with_wallet() {
+    let record = parse_record_with_wallet("01/01/24", "1.00000000", "$50,000.00", "coinbase");
+    assert_eq!(record.wallet, "coinbase");
+}
+
 // --- Bug-exposing tests (f64 precision) ---
 
 #[test]
 fn test_price_deserialize_uses_decimal_precision() {
-    // Test that price deserialization produces results identical to Decimal-based parsing.
-    // The current f64 path uses `as i64` (truncation) which fails for values like $0.29
-    // where 0.29 * 100.0 = 28.999... -> truncates to 28 instead of 29.
     use rust_decimal::Decimal;
     use std::str::FromStr;
 
@@ -119,8 +136,6 @@ fn test_price_deserialize_uses_decimal_precision() {
 
 #[test]
 fn test_bitcoin_deserialize_uses_decimal_precision() {
-    // Test that bitcoin deserialization produces results identical to Decimal-based parsing.
-    // The current f64 path can lose precision for certain satoshi values.
     use rust_decimal::Decimal;
     use std::str::FromStr;
 

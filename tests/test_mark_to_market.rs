@@ -1,6 +1,6 @@
 mod common;
 
-use common::{setup_test_db, create_test_csv, get_acquisitions, get_fair_value_count, get_acq_fair_value_count};
+use common::{setup_test_db, create_test_csv, default_config, get_acquisitions, get_fair_value_count, get_acq_fair_value_count};
 use rust_rgl_ledger::commands::import::import_transactions;
 use rust_rgl_ledger::commands::mark_to_market::mark_to_market;
 use std::sync::Mutex;
@@ -21,8 +21,9 @@ fn run_mtm_in_dir(price: &str, date: &str, conn: &mut diesel::SqliteConnection) 
 fn test_mtm_inserts_fair_value() {
     let _lock = CWD_LOCK.lock().unwrap();
     let mut conn = setup_test_db();
+    let config = default_config();
     let csv = create_test_csv(&[("01/01/2024", "1.00000000", "$40,000.00")]);
-    import_transactions(&csv.path().to_path_buf(), &mut conn).unwrap();
+    import_transactions(&csv.path().to_path_buf(), &mut conn, &config).unwrap();
 
     assert_eq!(get_fair_value_count(&mut conn), 0);
     run_mtm_in_dir("$45,000.00", "06/30/2024", &mut conn);
@@ -33,8 +34,9 @@ fn test_mtm_inserts_fair_value() {
 fn test_mtm_updates_acquisition_fair_value() {
     let _lock = CWD_LOCK.lock().unwrap();
     let mut conn = setup_test_db();
+    let config = default_config();
     let csv = create_test_csv(&[("01/01/2024", "1.00000000", "$40,000.00")]);
-    import_transactions(&csv.path().to_path_buf(), &mut conn).unwrap();
+    import_transactions(&csv.path().to_path_buf(), &mut conn, &config).unwrap();
 
     let acqs_before = get_acquisitions(&mut conn);
     assert_eq!(acqs_before[0].usd_cents_btc_fair_value, 4_000_000);
@@ -49,12 +51,13 @@ fn test_mtm_updates_acquisition_fair_value() {
 fn test_mtm_only_affects_undisposed_lots() {
     let _lock = CWD_LOCK.lock().unwrap();
     let mut conn = setup_test_db();
+    let config = default_config();
     let csv = create_test_csv(&[
         ("01/01/2024", "1.00000000", "$40,000.00"),
         ("02/01/2024", "1.00000000", "$42,000.00"),
         ("03/01/2024", "-1.00000000", "$44,000.00"),
     ]);
-    import_transactions(&csv.path().to_path_buf(), &mut conn).unwrap();
+    import_transactions(&csv.path().to_path_buf(), &mut conn, &config).unwrap();
 
     let acqs = get_acquisitions(&mut conn);
     assert_eq!(acqs[0].undisposed_satoshis, 0);
@@ -71,11 +74,12 @@ fn test_mtm_only_affects_undisposed_lots() {
 fn test_mtm_only_affects_lots_before_date() {
     let _lock = CWD_LOCK.lock().unwrap();
     let mut conn = setup_test_db();
+    let config = default_config();
     let csv = create_test_csv(&[
         ("01/01/2024", "0.50000000", "$40,000.00"),
         ("08/01/2024", "0.50000000", "$42,000.00"),
     ]);
-    import_transactions(&csv.path().to_path_buf(), &mut conn).unwrap();
+    import_transactions(&csv.path().to_path_buf(), &mut conn, &config).unwrap();
 
     run_mtm_in_dir("$50,000.00", "06/30/2024", &mut conn);
 
@@ -88,11 +92,12 @@ fn test_mtm_only_affects_lots_before_date() {
 fn test_mtm_creates_acquisition_fair_value_links() {
     let _lock = CWD_LOCK.lock().unwrap();
     let mut conn = setup_test_db();
+    let config = default_config();
     let csv = create_test_csv(&[
         ("01/01/2024", "0.50000000", "$40,000.00"),
         ("02/01/2024", "0.50000000", "$42,000.00"),
     ]);
-    import_transactions(&csv.path().to_path_buf(), &mut conn).unwrap();
+    import_transactions(&csv.path().to_path_buf(), &mut conn, &config).unwrap();
 
     assert_eq!(get_acq_fair_value_count(&mut conn), 0);
     run_mtm_in_dir("$45,000.00", "06/30/2024", &mut conn);
@@ -103,8 +108,9 @@ fn test_mtm_creates_acquisition_fair_value_links() {
 fn test_mtm_successive_adjustments() {
     let _lock = CWD_LOCK.lock().unwrap();
     let mut conn = setup_test_db();
+    let config = default_config();
     let csv = create_test_csv(&[("01/01/2024", "1.00000000", "$40,000.00")]);
-    import_transactions(&csv.path().to_path_buf(), &mut conn).unwrap();
+    import_transactions(&csv.path().to_path_buf(), &mut conn, &config).unwrap();
 
     run_mtm_in_dir("$45,000.00", "03/31/2024", &mut conn);
     let acqs = get_acquisitions(&mut conn);

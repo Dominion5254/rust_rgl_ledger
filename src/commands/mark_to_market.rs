@@ -18,7 +18,7 @@ pub fn mark_to_market(price: &String, date: &String, conn: &mut SqliteConnection
         .get_result(conn)
         .expect(format!("Error inserting {:?} into the Fair Values table", fair_value).as_str());
 
-
+    // MTM is a GAAP operation — only include lots with GAAP undisposed satoshis
     let undisposed_lots: Vec<Acquisition> = acquisitions::table
                                                 .filter(undisposed_satoshis.gt(0))
                                                 .filter(acquisition_date.le(fair_value.date))
@@ -37,12 +37,14 @@ pub fn mark_to_market(price: &String, date: &String, conn: &mut SqliteConnection
     let mut total_fair_value_adjustment = dec!(0);
 
     for lot in undisposed_lots {
+        // Use GAAP tracker for the report (MTM is a GAAP operation)
         let undisposed_btc = Decimal::from_i64(lot.undisposed_satoshis).unwrap() / dec!(100_000_000);
         let current_usd_fair_value_price = Decimal::from_i64(fair_value.fair_value_cents).unwrap() / dec!(100);
         let previous_usd_fair_value = undisposed_btc * Decimal::from_i64(lot.usd_cents_btc_fair_value).unwrap() / dec!(100);
         let current_usd_fair_value = undisposed_btc * current_usd_fair_value_price;
 
         let fv_lot = FairValueHolding {
+            wallet: lot.wallet.clone(),
             acquisition_date: lot.acquisition_date,
             btc: Decimal::from_i64(lot.satoshis).unwrap() / dec!(100_000_000),
             undisposed_btc,
@@ -52,14 +54,14 @@ pub fn mark_to_market(price: &String, date: &String, conn: &mut SqliteConnection
             fair_value_adjustment: (current_usd_fair_value - previous_usd_fair_value).round_dp_with_strategy(2, RoundingStrategy::MidpointAwayFromZero),
         };
 
-        
+
         total_btc += fv_lot.btc;
         total_undisposed_btc += fv_lot.undisposed_btc;
         total_usd_basis += fv_lot.usd_basis;
         total_previous_usd_fair_value += fv_lot.previous_usd_fair_value;
         total_current_usd_fair_value += fv_lot.current_usd_fair_value;
         total_fair_value_adjustment += fv_lot.fair_value_adjustment;
-        
+
         wtr.serialize(fv_lot)?;
 
         diesel::insert_into(acquisition_fair_values::table)
@@ -69,6 +71,7 @@ pub fn mark_to_market(price: &String, date: &String, conn: &mut SqliteConnection
     }
 
     wtr.write_record(&[
+        String::from(""),
         String::from(""),
         total_btc.to_string(),
         total_undisposed_btc.to_string(),
@@ -84,6 +87,6 @@ pub fn mark_to_market(price: &String, date: &String, conn: &mut SqliteConnection
         .set(usd_cents_btc_fair_value.eq(fair_value.fair_value_cents))
         .execute(conn)
         .expect("Error updating Acquistion Lot Fair Value");
-    
+
     Ok(())
 }

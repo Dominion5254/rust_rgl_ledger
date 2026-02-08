@@ -14,6 +14,19 @@ pub fn setup_test_db() -> SqliteConnection {
     conn
 }
 
+pub fn default_config() -> rust_rgl_ledger::LotConfig {
+    rust_rgl_ledger::LotConfig::default()
+}
+
+pub fn universal_config() -> rust_rgl_ledger::LotConfig {
+    rust_rgl_ledger::LotConfig {
+        tax_lot_method: "fifo".to_string(),
+        tax_lot_scope: "universal".to_string(),
+        gaap_lot_method: "fifo".to_string(),
+        gaap_lot_scope: "universal".to_string(),
+    }
+}
+
 pub fn create_test_csv(records: &[(&str, &str, &str)]) -> NamedTempFile {
     let mut file = tempfile::Builder::new()
         .suffix(".csv")
@@ -22,6 +35,32 @@ pub fn create_test_csv(records: &[(&str, &str, &str)]) -> NamedTempFile {
     writeln!(file, "Date,Bitcoin,Price").unwrap();
     for (date, bitcoin, price) in records {
         writeln!(file, "{},\"{}\",\"{}\"", date, bitcoin, price).unwrap();
+    }
+    file.flush().unwrap();
+    file
+}
+
+pub fn create_test_csv_with_wallet(records: &[(&str, &str, &str, &str)]) -> NamedTempFile {
+    let mut file = tempfile::Builder::new()
+        .suffix(".csv")
+        .tempfile()
+        .expect("Failed to create temp CSV file");
+    writeln!(file, "Date,Bitcoin,Price,Wallet").unwrap();
+    for (date, bitcoin, price, wallet) in records {
+        writeln!(file, "{},\"{}\",\"{}\",{}", date, bitcoin, price, wallet).unwrap();
+    }
+    file.flush().unwrap();
+    file
+}
+
+pub fn create_bucket_csv(records: &[(&str, &str)]) -> NamedTempFile {
+    let mut file = tempfile::Builder::new()
+        .suffix(".csv")
+        .tempfile()
+        .expect("Failed to create temp CSV file");
+    writeln!(file, "Wallet,BTC").unwrap();
+    for (wallet, btc) in records {
+        writeln!(file, "{},{}", wallet, btc).unwrap();
     }
     file.flush().unwrap();
     file
@@ -49,6 +88,22 @@ pub fn get_acq_disps(conn: &mut SqliteConnection) -> Vec<AcquisitionDisposition>
         .select(AcquisitionDisposition::as_select())
         .load(conn)
         .expect("Failed to load acquisition_dispositions")
+}
+
+pub fn get_tax_acq_disps(conn: &mut SqliteConnection) -> Vec<AcquisitionDisposition> {
+    acquisition_dispositions::table
+        .filter(acquisition_dispositions::match_type.eq("tax"))
+        .select(AcquisitionDisposition::as_select())
+        .load(conn)
+        .expect("Failed to load tax acquisition_dispositions")
+}
+
+pub fn get_gaap_acq_disps(conn: &mut SqliteConnection) -> Vec<AcquisitionDisposition> {
+    acquisition_dispositions::table
+        .filter(acquisition_dispositions::match_type.eq("gaap"))
+        .select(AcquisitionDisposition::as_select())
+        .load(conn)
+        .expect("Failed to load gaap acquisition_dispositions")
 }
 
 pub fn get_fair_value_count(conn: &mut SqliteConnection) -> i64 {

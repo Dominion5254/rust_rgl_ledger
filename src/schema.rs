@@ -1,14 +1,13 @@
 // @generated automatically by Diesel CLI.
 
 diesel::table! {
-    acquisition_dispositions (acquisition_id, disposition_id) {
+    acquisition_dispositions (acquisition_id, disposition_id, match_type) {
         acquisition_id -> Integer,
         disposition_id -> Integer,
+        match_type -> Text,
         satoshis -> BigInt,
-        gaap_basis -> BigInt,
-        gaap_rgl -> BigInt,
-        tax_basis -> BigInt,
-        tax_rgl -> BigInt,
+        basis -> BigInt,
+        rgl -> BigInt,
         term -> Text,
     }
 }
@@ -28,6 +27,8 @@ diesel::table! {
         undisposed_satoshis -> BigInt,
         usd_cents_btc_basis -> BigInt,
         usd_cents_btc_fair_value -> BigInt,
+        wallet -> Text,
+        tax_undisposed_satoshis -> BigInt,
     }
 }
 
@@ -38,6 +39,8 @@ diesel::table! {
         satoshis -> BigInt,
         undisposed_satoshis -> BigInt,
         usd_cents_btc_basis -> BigInt,
+        wallet -> Text,
+        tax_undisposed_satoshis -> BigInt,
     }
 }
 

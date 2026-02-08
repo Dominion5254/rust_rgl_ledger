@@ -2,7 +2,7 @@ use std::path::PathBuf;
 
 use crate::{
     models::{Acquisition, AcquisitionDisposition, Holding, HoldingsDate},
-    schema::{acquisitions, dispositions},
+    schema::{acquisitions, dispositions, acquisition_dispositions},
 };
 use anyhow::Ok;
 use diesel::prelude::*;
@@ -10,7 +10,11 @@ use diesel::sqlite::SqliteConnection;
 use rust_decimal::{prelude::FromPrimitive, Decimal, RoundingStrategy};
 use rust_decimal_macros::dec;
 
-pub fn holdings(date: &String, conn: &mut SqliteConnection) -> Result<(), anyhow::Error> {
+pub fn holdings(date: &String, view: &str, conn: &mut SqliteConnection) -> Result<(), anyhow::Error> {
+    if !["tax", "gaap"].contains(&view) {
+        return Err(anyhow::anyhow!("Invalid view '{}'. Must be 'tax' or 'gaap'.", view));
+    }
+
     let mut holdings_date: HoldingsDate =
         serde_json::from_str(&format!(r#"{{ "date": "{}" }}"#, date))
             .expect("Failed to deserialize holdings date");
@@ -21,23 +25,27 @@ pub fn holdings(date: &String, conn: &mut SqliteConnection) -> Result<(), anyhow
     ));
     let mut wtr = csv::Writer::from_path(file_path).unwrap();
 
-    let holdings: Vec<Acquisition> = acquisitions::table
+    let use_tax = view == "tax";
+    let match_type_filter = if use_tax { "tax" } else { "gaap" };
+
+    let all_holdings: Vec<Acquisition> = acquisitions::table
         .filter(acquisitions::acquisition_date.le(holdings_date.date))
         .select(Acquisition::as_select())
         .load(conn)
         .unwrap();
 
     let subsequent_acq_disps: Vec<AcquisitionDisposition> =
-        AcquisitionDisposition::belonging_to(&holdings)
+        AcquisitionDisposition::belonging_to(&all_holdings)
             .inner_join(dispositions::table)
             .filter(dispositions::disposition_date.gt(holdings_date.date))
+            .filter(acquisition_dispositions::match_type.eq(match_type_filter))
             .select(AcquisitionDisposition::as_select())
             .load(conn)?;
 
     let holdings_with_subsequent_acq_disps: Vec<(Acquisition, i64)> = subsequent_acq_disps
-        .grouped_by(&holdings)
+        .grouped_by(&all_holdings)
         .into_iter()
-        .zip(holdings)
+        .zip(all_holdings)
         .map(|(acq_disps, holding)| {
             (
                 holding,
@@ -57,13 +65,19 @@ pub fn holdings(date: &String, conn: &mut SqliteConnection) -> Result<(), anyhow
 
     for (lot, subsequent_disposals) in holdings_with_subsequent_acq_disps {
         let btc = Decimal::from_i64(lot.satoshis).unwrap() / dec!(100_000_000);
-        let undisposed_btc = Decimal::from_i64(lot.undisposed_satoshis + subsequent_disposals)
+        let current_undisposed = if use_tax {
+            lot.tax_undisposed_satoshis
+        } else {
+            lot.undisposed_satoshis
+        };
+        let undisposed_btc = Decimal::from_i64(current_undisposed + subsequent_disposals)
             .unwrap()
             / dec!(100_000_000);
         if undisposed_btc == dec!(0) {
             continue;
         }
         let holding = Holding {
+            wallet: lot.wallet.clone(),
             acquisition_date: lot.acquisition_date,
             btc,
             undisposed_btc,
@@ -83,6 +97,7 @@ pub fn holdings(date: &String, conn: &mut SqliteConnection) -> Result<(), anyhow
     }
 
     wtr.write_record(&[
+        String::from(""),
         String::from(""),
         total_btc.to_string(),
         total_undisposed_btc.to_string(),

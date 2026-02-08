@@ -14,6 +14,8 @@ pub struct Acquisition {
     pub undisposed_satoshis: i64,
     pub usd_cents_btc_basis: i64,
     pub usd_cents_btc_fair_value: i64,
+    pub wallet: String,
+    pub tax_undisposed_satoshis: i64,
 }
 
 #[derive(Insertable, Debug)]
@@ -24,6 +26,12 @@ pub struct NewAcquisition {
     pub undisposed_satoshis: i64,
     pub usd_cents_btc_basis: i64,
     pub usd_cents_btc_fair_value: i64,
+    pub wallet: String,
+    pub tax_undisposed_satoshis: i64,
+}
+
+fn default_wallet() -> String {
+    "default".to_string()
 }
 
 #[derive(Debug, Deserialize)]
@@ -35,6 +43,8 @@ pub struct NewRecord {
     pub bitcoin: i64,
     #[serde(deserialize_with = "deserialize_price")]
     pub price: i64,
+    #[serde(default = "default_wallet")]
+    pub wallet: String,
 }
 
 pub fn deserialize_date<'de, D>(deserializer: D) -> Result<NaiveDateTime, D::Error>
@@ -103,6 +113,8 @@ pub struct Disposition {
     pub satoshis: i64,
     pub undisposed_satoshis: i64,
     pub usd_cents_btc_basis: i64,
+    pub wallet: String,
+    pub tax_undisposed_satoshis: i64,
 }
 
 #[derive(Queryable, Insertable, Debug)]
@@ -113,21 +125,22 @@ pub struct NewDisposition {
     pub satoshis: i64,
     pub undisposed_satoshis: i64,
     pub usd_cents_btc_basis: i64,
+    pub wallet: String,
+    pub tax_undisposed_satoshis: i64,
 }
 
 #[derive(Queryable, Selectable, Identifiable, Insertable, PartialEq, Debug, Associations)]
 #[diesel(belongs_to(Acquisition))]
 #[diesel(belongs_to(Disposition))]
 #[diesel(table_name = acquisition_dispositions)]
-#[diesel(primary_key(acquisition_id, disposition_id))]
+#[diesel(primary_key(acquisition_id, disposition_id, match_type))]
 pub struct AcquisitionDisposition {
     pub acquisition_id: i32,
     pub disposition_id: i32,
+    pub match_type: String,
     pub satoshis: i64,
-    pub gaap_basis: i64,
-    pub gaap_rgl: i64,
-    pub tax_basis: i64,
-    pub tax_rgl: i64,
+    pub basis: i64,
+    pub rgl: i64,
     pub term: String,
 }
 
@@ -147,22 +160,34 @@ pub struct HoldingsDate {
 
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "PascalCase")]
-pub struct RGL {
+pub struct TaxRGL {
     pub acquisition_date: NaiveDateTime,
     pub disposition_date: NaiveDateTime,
     pub disposed_btc: Decimal,
     pub disposal_fmv: Decimal,
-    pub tax_basis: Decimal,
-    pub tax_rgl: Decimal,
-    pub gaap_basis: Decimal,
-    pub gaap_rgl: Decimal,
-    pub fair_value_disposed: Decimal,
+    pub basis: Decimal,
+    pub rgl: Decimal,
+    pub term: String,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "PascalCase")]
+pub struct GaapRGL {
+    pub acquisition_date: NaiveDateTime,
+    pub disposition_date: NaiveDateTime,
+    pub disposed_btc: Decimal,
+    pub disposal_fmv: Decimal,
+    pub cost_basis: Decimal,
+    pub basis: Decimal,
+    pub fmv_disposed: Decimal,
+    pub rgl: Decimal,
     pub term: String,
 }
 
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "PascalCase")]
 pub struct Holding {
+    pub wallet: String,
     pub acquisition_date: NaiveDateTime,
     pub btc: Decimal,
     pub undisposed_btc: Decimal,
@@ -191,6 +216,7 @@ pub struct NewFairValue {
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "PascalCase")]
 pub struct FairValueHolding {
+    pub wallet: String,
     pub acquisition_date: NaiveDateTime,
     pub btc: Decimal,
     pub undisposed_btc: Decimal,
