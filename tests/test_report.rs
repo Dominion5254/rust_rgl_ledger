@@ -176,7 +176,6 @@ fn test_report_totals_match_sum() {
 // --- Bug-exposing test ---
 
 #[test]
-#[ignore]
 fn test_report_disposal_fmv_minus_basis_equals_rgl() {
     let _lock = CWD_LOCK.lock().unwrap();
     let mut conn = setup_test_db();

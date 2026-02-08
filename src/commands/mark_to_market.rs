@@ -1,6 +1,6 @@
 use diesel::prelude::*;
 use diesel::sqlite::SqliteConnection;
-use rust_decimal::{Decimal, prelude::FromPrimitive};
+use rust_decimal::{Decimal, prelude::FromPrimitive, RoundingStrategy};
 use rust_decimal_macros::dec;
 use std::path::PathBuf;
 use crate::schema::acquisition_fair_values::*;
@@ -46,10 +46,10 @@ pub fn mark_to_market(price: &String, date: &String, conn: &mut SqliteConnection
             acquisition_date: lot.acquisition_date,
             btc: Decimal::from_i64(lot.satoshis).unwrap() / dec!(100_000_000),
             undisposed_btc,
-            usd_basis: (Decimal::from_i64(lot.usd_cents_btc_basis).unwrap() / dec!(100) * undisposed_btc).round_dp(2),
-            previous_usd_fair_value: previous_usd_fair_value.round_dp(2),
-            current_usd_fair_value: current_usd_fair_value.round_dp(2),
-            fair_value_adjustment: (current_usd_fair_value - previous_usd_fair_value).round_dp(2),
+            usd_basis: (Decimal::from_i64(lot.usd_cents_btc_basis).unwrap() / dec!(100) * undisposed_btc).round_dp_with_strategy(2, RoundingStrategy::MidpointAwayFromZero),
+            previous_usd_fair_value: previous_usd_fair_value.round_dp_with_strategy(2, RoundingStrategy::MidpointAwayFromZero),
+            current_usd_fair_value: current_usd_fair_value.round_dp_with_strategy(2, RoundingStrategy::MidpointAwayFromZero),
+            fair_value_adjustment: (current_usd_fair_value - previous_usd_fair_value).round_dp_with_strategy(2, RoundingStrategy::MidpointAwayFromZero),
         };
 
         

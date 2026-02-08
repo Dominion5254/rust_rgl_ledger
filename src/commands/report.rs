@@ -6,7 +6,7 @@ use csv::Writer;
 use diesel::SelectableHelper;
 use diesel::prelude::*;
 use diesel::sqlite::SqliteConnection;
-use rust_decimal::{Decimal, prelude::FromPrimitive};
+use rust_decimal::{Decimal, prelude::FromPrimitive, RoundingStrategy};
 use rust_decimal_macros::dec;
 use crate::models::RGL;
 use crate::models::ReportDates;
@@ -48,19 +48,19 @@ pub fn report_term(wtr: &mut Writer<File>, beg: NaiveDateTime, end: NaiveDateTim
 
     for acq_disp in acq_disps {
         let sats_dec = Decimal::from_i64(acq_disp.2.satoshis).unwrap() / dec!(100_000_000);
-        let tax_basis = (Decimal::from_i64(acq_disp.2.tax_basis).unwrap() / dec!(100)).round_dp(2);
-        let gaap_basis = (Decimal::from_i64(acq_disp.2.gaap_basis).unwrap() / dec!(100)).round_dp(2);
+        let tax_basis = (Decimal::from_i64(acq_disp.2.tax_basis).unwrap() / dec!(100)).round_dp_with_strategy(2, RoundingStrategy::MidpointAwayFromZero);
+        let gaap_basis = (Decimal::from_i64(acq_disp.2.gaap_basis).unwrap() / dec!(100)).round_dp_with_strategy(2, RoundingStrategy::MidpointAwayFromZero);
         let fair_value_disposed: Decimal = -(tax_basis - gaap_basis);
 
         let rgl = RGL {
             acquisition_date: acq_disp.1.acquisition_date,
             disposition_date: acq_disp.0.disposition_date,
             disposed_btc: sats_dec,
-            disposal_fmv: (sats_dec * Decimal::from_i64(acq_disp.0.usd_cents_btc_basis).unwrap() / dec!(100)).round_dp(2),
+            disposal_fmv: (sats_dec * Decimal::from_i64(acq_disp.0.usd_cents_btc_basis).unwrap() / dec!(100)).round_dp_with_strategy(2, RoundingStrategy::MidpointAwayFromZero),
             tax_basis,
-            tax_rgl:( Decimal::from_i64(acq_disp.2.tax_rgl).unwrap() / dec!(100)).round_dp(2),
+            tax_rgl:( Decimal::from_i64(acq_disp.2.tax_rgl).unwrap() / dec!(100)).round_dp_with_strategy(2, RoundingStrategy::MidpointAwayFromZero),
             gaap_basis,
-            gaap_rgl: (Decimal::from_i64(acq_disp.2.gaap_rgl).unwrap() / dec!(100)).round_dp(2),
+            gaap_rgl: (Decimal::from_i64(acq_disp.2.gaap_rgl).unwrap() / dec!(100)).round_dp_with_strategy(2, RoundingStrategy::MidpointAwayFromZero),
             fair_value_disposed,
             term: term.clone(),
         };

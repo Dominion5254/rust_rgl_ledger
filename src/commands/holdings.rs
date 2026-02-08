@@ -7,7 +7,7 @@ use crate::{
 use anyhow::Ok;
 use diesel::prelude::*;
 use diesel::sqlite::SqliteConnection;
-use rust_decimal::{prelude::FromPrimitive, Decimal};
+use rust_decimal::{prelude::FromPrimitive, Decimal, RoundingStrategy};
 use rust_decimal_macros::dec;
 
 pub fn holdings(date: &String, conn: &mut SqliteConnection) -> Result<(), anyhow::Error> {
@@ -69,10 +69,10 @@ pub fn holdings(date: &String, conn: &mut SqliteConnection) -> Result<(), anyhow
             undisposed_btc,
             usd_basis: (Decimal::from_i64(lot.usd_cents_btc_basis).unwrap() / dec!(100)
                 * undisposed_btc)
-                .round_dp(2),
+                .round_dp_with_strategy(2, RoundingStrategy::MidpointAwayFromZero),
             usd_fair_value: (Decimal::from_i64(lot.usd_cents_btc_fair_value).unwrap() / dec!(100)
                 * undisposed_btc)
-                .round_dp(2),
+                .round_dp_with_strategy(2, RoundingStrategy::MidpointAwayFromZero),
         };
         total_btc += holding.btc;
         total_undisposed_btc += holding.undisposed_btc;

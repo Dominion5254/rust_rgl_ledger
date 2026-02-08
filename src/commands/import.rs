@@ -4,6 +4,16 @@ use diesel::sqlite::SqliteConnection;
 use core::cmp::min;
 
 use crate::models::AcquisitionDisposition;
+
+fn rounding_div(numerator: i64, denominator: i64) -> i64 {
+    let quotient = numerator / denominator;
+    let remainder = numerator % denominator;
+    if remainder * 2 >= denominator {
+        quotient + 1
+    } else {
+        quotient
+    }
+}
 use crate::models::{NewRecord, Acquisition, NewDisposition, NewAcquisition, Disposition};
 use crate::schema::{acquisitions, dispositions, acquisition_dispositions};
 use crate::schema::acquisitions::dsl::*;
@@ -62,9 +72,9 @@ pub fn import_transactions(file: &PathBuf, conn: &mut SqliteConnection) -> Resul
                                         .expect("Error fetching first undisposed acquisition lot");
 
             let sats_disposed = min(-remaining_sat_disposition, acq_lot.undisposed_satoshis);
-            let gaap_basis: i64 = sats_disposed * acq_lot.usd_cents_btc_fair_value / 100_000_000;
-            let tax_basis:i64 = sats_disposed * acq_lot.usd_cents_btc_basis / 100_000_000;
-            let fv_disposed_cents = sats_disposed * disp_lot.usd_cents_btc_basis / 100_000_000;
+            let gaap_basis: i64 = rounding_div(sats_disposed * acq_lot.usd_cents_btc_fair_value, 100_000_000);
+            let tax_basis: i64 = rounding_div(sats_disposed * acq_lot.usd_cents_btc_basis, 100_000_000);
+            let fv_disposed_cents = rounding_div(sats_disposed * disp_lot.usd_cents_btc_basis, 100_000_000);
             let gaap_rgl = fv_disposed_cents - gaap_basis;
             let tax_rgl = fv_disposed_cents - tax_basis;
             let term = disp_lot.disposition_date - acq_lot.acquisition_date;

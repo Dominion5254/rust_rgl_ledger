@@ -89,7 +89,6 @@ fn test_bitcoin_small() {
 // --- Bug-exposing tests (f64 precision) ---
 
 #[test]
-#[ignore]
 fn test_price_deserialize_uses_decimal_precision() {
     // Test that price deserialization produces results identical to Decimal-based parsing.
     // The current f64 path uses `as i64` (truncation) which fails for values like $0.29
@@ -119,7 +118,6 @@ fn test_price_deserialize_uses_decimal_precision() {
 }
 
 #[test]
-#[ignore]
 fn test_bitcoin_deserialize_uses_decimal_precision() {
     // Test that bitcoin deserialization produces results identical to Decimal-based parsing.
     // The current f64 path can lose precision for certain satoshi values.

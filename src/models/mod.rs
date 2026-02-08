@@ -71,10 +71,11 @@ where
     D: Deserializer<'de>,
 {
     let price_str = String::deserialize(deserializer)?;
-    let price_i64 = price_str.replace("$", "").replace(",", "").parse::<f64>();
-    match price_i64 {
+    let cleaned = price_str.replace("$", "").replace(",", "");
+    match Decimal::from_str_exact(&cleaned) {
         Ok(price) => {
-            return Ok((price * 100.0) as i64);
+            let cents = (price * Decimal::from(100)).round();
+            Ok(cents.to_string().parse::<i64>().unwrap())
         }
         Err(e) => {
             Err(de::Error::custom(format!("Invalid Price format: {}\nError: {}", price_str, e)))
@@ -87,8 +88,10 @@ where
     D: Deserializer<'de>,
 {
     let bitcoin_str = String::deserialize(deserializer)?;
-    let sats: i64 = (bitcoin_str.parse::<f64>().unwrap() * (100_000_000 as f64)) as i64;
-    Ok(sats)
+    let btc = Decimal::from_str_exact(&bitcoin_str)
+        .map_err(|e| de::Error::custom(format!("Invalid Bitcoin format: {}\nError: {}", bitcoin_str, e)))?;
+    let sats = (btc * Decimal::from(100_000_000i64)).round();
+    Ok(sats.to_string().parse::<i64>().unwrap())
 }
 
 #[derive(Queryable, Selectable, Debug, Identifiable)]
