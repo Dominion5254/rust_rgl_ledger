@@ -1,4 +1,5 @@
 use diesel::prelude::*;
+use diesel::sqlite::SqliteConnection;
 use rust_decimal::{Decimal, prelude::FromPrimitive};
 use rust_decimal_macros::dec;
 use std::path::PathBuf;
@@ -6,13 +7,11 @@ use crate::schema::acquisition_fair_values::*;
 use crate::schema::{fair_values, acquisition_fair_values};
 use crate::schema::acquisitions::{self, undisposed_satoshis, acquisition_date, usd_cents_btc_fair_value};
 use crate::models::{FairValue, NewFairValue, Acquisition, FairValueHolding};
-use crate::establish_connection;
 
-pub fn mark_to_market(price: &String, date: &String) -> Result<(), anyhow::Error> {
+pub fn mark_to_market(price: &String, date: &String, conn: &mut SqliteConnection) -> Result<(), anyhow::Error> {
     let mut fair_value: NewFairValue = serde_json::from_str(&format!(r#"{{ "fair_value_cents": "{}", "date": "{}" }}"#, price, date)).expect("Failed to deserialize provided date/price");
 
     fair_value.date = fair_value.date.date().and_hms_opt(23, 59, 59).unwrap();
-    let conn = &mut establish_connection();
 
     let fair_value_inserted: FairValue = diesel::insert_into(fair_values::table)
         .values(&fair_value)

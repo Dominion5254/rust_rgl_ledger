@@ -1,4 +1,5 @@
 use clap::{Parser, Subcommand};
+use rust_rgl_ledger::establish_connection;
 use rust_rgl_ledger::commands::import::import_transactions;
 use rust_rgl_ledger::commands::report::report;
 use rust_rgl_ledger::commands::holdings::holdings;
@@ -6,9 +7,10 @@ use rust_rgl_ledger::commands::mark_to_market::mark_to_market;
 
 fn main() {
     let command = Cli::parse();
+    let conn = &mut establish_connection();
     match command.subcommand {
         Command::Import { file } => {
-            match import_transactions(&file) {
+            match import_transactions(&file, conn) {
                 Ok(_) => {
                     println!("Successfully Imported transactions from {:?}", file)
                 }
@@ -18,7 +20,7 @@ fn main() {
             };
         },
         Command::Report { beg, end } => {
-            match report(&beg, &end) {
+            match report(&beg, &end, conn) {
                 Ok(_) => {
                     println!("Realized gain/loss report run for the period {} - {}", beg, end)
                 }
@@ -28,7 +30,7 @@ fn main() {
             }
         },
         Command::Holdings { date } => {
-            match holdings(&date) {
+            match holdings(&date, conn) {
                 Ok(_) => {
                     println!("Holdings report run for the period ended {}", date)
                 }
@@ -38,7 +40,7 @@ fn main() {
             }
         },
         Command::MarkToMarket { price, date } => {
-            match mark_to_market(&price, &date) {
+            match mark_to_market(&price, &date, conn) {
                 Ok(_) => {
                     println!("Successfully adjusted Bitcoin holdings to {} as of {}", price, &date);
                     println!("Mark to Market report saved to ./reports/mark-to-market-{}", date);

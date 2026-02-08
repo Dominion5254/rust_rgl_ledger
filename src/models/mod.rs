@@ -66,7 +66,7 @@ where
     Err(de::Error::custom(format!("Invalid date format: {}", date_str)))
 }
 
-fn deserialize_price<'de, D>(deserializer: D) -> Result<i64, D::Error>
+pub fn deserialize_price<'de, D>(deserializer: D) -> Result<i64, D::Error>
 where
     D: Deserializer<'de>,
 {
@@ -82,7 +82,7 @@ where
     }
 }
 
-fn deserialize_bitcoin<'de, D>(deserializer: D) -> Result<i64, D::Error>
+pub fn deserialize_bitcoin<'de, D>(deserializer: D) -> Result<i64, D::Error>
 where
     D: Deserializer<'de>,
 {

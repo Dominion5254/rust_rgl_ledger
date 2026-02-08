@@ -1,15 +1,14 @@
 use std::path::PathBuf;
 use diesel::prelude::*;
+use diesel::sqlite::SqliteConnection;
 use core::cmp::min;
 
-use crate::establish_connection;
 use crate::models::AcquisitionDisposition;
 use crate::models::{NewRecord, Acquisition, NewDisposition, NewAcquisition, Disposition};
 use crate::schema::{acquisitions, dispositions, acquisition_dispositions};
 use crate::schema::acquisitions::dsl::*;
 
-pub fn import_transactions(file: &PathBuf) -> Result<(), String> {
-    let conn = &mut establish_connection();
+pub fn import_transactions(file: &PathBuf, conn: &mut SqliteConnection) -> Result<(), String> {
     let mut rdr = csv::Reader::from_path(&file).expect(format!("Error reading file {:?}", file).as_str());
 
     let mut records: Vec<NewRecord> = rdr.deserialize::<NewRecord>().map(|r| r.unwrap()).collect();

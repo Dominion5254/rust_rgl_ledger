@@ -1,22 +1,20 @@
 use std::path::PathBuf;
 
 use crate::{
-    establish_connection,
     models::{Acquisition, AcquisitionDisposition, Holding, HoldingsDate},
     schema::{acquisitions, dispositions},
 };
 use anyhow::Ok;
 use diesel::prelude::*;
+use diesel::sqlite::SqliteConnection;
 use rust_decimal::{prelude::FromPrimitive, Decimal};
 use rust_decimal_macros::dec;
 
-pub fn holdings(date: &String) -> Result<(), anyhow::Error> {
+pub fn holdings(date: &String, conn: &mut SqliteConnection) -> Result<(), anyhow::Error> {
     let mut holdings_date: HoldingsDate =
         serde_json::from_str(&format!(r#"{{ "date": "{}" }}"#, date))
             .expect("Failed to deserialize holdings date");
     holdings_date.date = holdings_date.date.date().and_hms_opt(23, 59, 59).unwrap();
-
-    let conn = &mut establish_connection();
     let file_path: PathBuf = PathBuf::from(format!(
         "./reports/holdings_{}.csv",
         holdings_date.date.date()
