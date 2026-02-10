@@ -141,6 +141,7 @@ enum Command {
 }
 
 #[derive(Parser)]
+#[command(version)]
 struct Cli {
     #[clap(subcommand)]
     subcommand: Command,
