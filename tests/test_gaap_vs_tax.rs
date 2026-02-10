@@ -99,36 +99,38 @@ fn test_report_tax_gaap_separate_files_after_mtm() {
 
     let (tax_content, gaap_content) = run_report_in_dir("01/01/2024", "12/31/2024", &mut conn);
 
-    // Tax report: columns AcquisitionDate(0), DispositionDate(1), DisposedBtc(2), DisposalFmv(3), Basis(4), Rgl(5), Term(6)
+    // Tax report: columns AcquisitionDate(0), DispositionDate(1), DisposedBtc(2), CostPerBtc(3),
+    //             DisposalFmvPerBtc(4), DisposalFmv(5), Basis(6), Rgl(7), Term(8)
     let mut tax_rdr = csv::Reader::from_reader(tax_content.as_bytes());
     let tax_rows: Vec<csv::StringRecord> = tax_rdr.records().filter_map(|r| r.ok()).collect();
     let tax_detail: Vec<_> = tax_rows.iter().filter(|r| {
         r.get(0).map_or(false, |s| !s.is_empty()) &&
-        r.get(6).map_or(false, |s| s == "short" || s == "long")
+        r.get(8).map_or(false, |s| s == "short" || s == "long")
     }).collect();
     assert_eq!(tax_detail.len(), 1, "Should have 1 tax detail row");
-    let tax_basis = Decimal::from_str(tax_detail[0].get(4).unwrap()).unwrap();
+    let tax_basis = Decimal::from_str(tax_detail[0].get(6).unwrap()).unwrap();
     assert_eq!(tax_basis, Decimal::from(40_000), "Tax basis should be $40,000 (cost basis)");
 
-    // GAAP report: columns AcquisitionDate(0), DispositionDate(1), DisposedBtc(2), DisposalFmv(3),
-    //              CostBasis(4), Basis(5), FmvDisposed(6), Rgl(7), Term(8)
+    // GAAP report: columns AcquisitionDate(0), DispositionDate(1), DisposedBtc(2), CostPerBtc(3),
+    //              DisposalFmvPerBtc(4), GaapPerBtc(5), DisposalFmv(6), CostBasis(7),
+    //              Basis(8), FmvDisposed(9), Rgl(10), Term(11)
     let mut gaap_rdr = csv::Reader::from_reader(gaap_content.as_bytes());
     let gaap_rows: Vec<csv::StringRecord> = gaap_rdr.records().filter_map(|r| r.ok()).collect();
     let gaap_detail: Vec<_> = gaap_rows.iter().filter(|r| {
         r.get(0).map_or(false, |s| !s.is_empty()) &&
-        r.get(8).map_or(false, |s| s == "short" || s == "long")
+        r.get(11).map_or(false, |s| s == "short" || s == "long")
     }).collect();
     assert_eq!(gaap_detail.len(), 1, "Should have 1 gaap detail row");
 
     // CostBasis should be $40,000 (original acquisition cost)
-    let cost_basis = Decimal::from_str(gaap_detail[0].get(4).unwrap()).unwrap();
+    let cost_basis = Decimal::from_str(gaap_detail[0].get(7).unwrap()).unwrap();
     assert_eq!(cost_basis, Decimal::from(40_000), "CostBasis should be $40,000 (original cost)");
 
     // Basis should be $45,000 (fair value carrying amount after MTM)
-    let gaap_basis = Decimal::from_str(gaap_detail[0].get(5).unwrap()).unwrap();
+    let gaap_basis = Decimal::from_str(gaap_detail[0].get(8).unwrap()).unwrap();
     assert_eq!(gaap_basis, Decimal::from(45_000), "GAAP basis should be $45,000 (fair value after MTM)");
 
     // FmvDisposed should be $5,000 ($45k fair value - $40k cost)
-    let fmv_disposed = Decimal::from_str(gaap_detail[0].get(6).unwrap()).unwrap();
+    let fmv_disposed = Decimal::from_str(gaap_detail[0].get(9).unwrap()).unwrap();
     assert_eq!(fmv_disposed, Decimal::from(5_000), "FmvDisposed should be $5,000 (MTM adjustment write-off)");
 }

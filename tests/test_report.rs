@@ -90,8 +90,8 @@ fn test_report_view_gaap_only() {
     assert!(!gaap.is_empty(), "GAAP report should be generated");
 }
 
-// Tax report columns: AcquisitionDate(0), DispositionDate(1), DisposedBtc(2), DisposalFmv(3), Basis(4), Rgl(5), Term(6)
-// GAAP report columns: AcquisitionDate(0), DispositionDate(1), DisposedBtc(2), DisposalFmv(3), CostBasis(4), Basis(5), FmvDisposed(6), Rgl(7), Term(8)
+// Tax report columns: AcquisitionDate(0), DispositionDate(1), DisposedBtc(2), CostPerBtc(3), DisposalFmvPerBtc(4), DisposalFmv(5), Basis(6), Rgl(7), Term(8)
+// GAAP report columns: AcquisitionDate(0), DispositionDate(1), DisposedBtc(2), CostPerBtc(3), DisposalFmvPerBtc(4), GaapPerBtc(5), DisposalFmv(6), CostBasis(7), Basis(8), FmvDisposed(9), Rgl(10), Term(11)
 
 #[test]
 fn test_report_short_term_only() {
@@ -110,7 +110,7 @@ fn test_report_short_term_only() {
     let mut found_short = false;
     let mut found_long = false;
     for row in &rows {
-        if let Some(term) = row.get(6) {
+        if let Some(term) = row.get(8) {
             if term == "short" { found_short = true; }
             if term == "long" { found_long = true; }
         }
@@ -136,7 +136,7 @@ fn test_report_long_term_only() {
     let mut found_short = false;
     let mut found_long = false;
     for row in &rows {
-        if let Some(term) = row.get(6) {
+        if let Some(term) = row.get(8) {
             if term == "short" { found_short = true; }
             if term == "long" { found_long = true; }
         }
@@ -163,7 +163,7 @@ fn test_report_mixed_terms() {
     let mut found_short = false;
     let mut found_long = false;
     for row in &rows {
-        if let Some(term) = row.get(6) {
+        if let Some(term) = row.get(8) {
             if term == "short" { found_short = true; }
             if term == "long" { found_long = true; }
         }
@@ -187,10 +187,10 @@ fn test_report_date_filtering() {
     let (tax, _gaap) = run_report_in_dir("01/01/2024", "03/31/2024", "both", &mut conn);
     let rows = parse_report_rows(&tax);
 
-    // Detail rows: non-empty first column and term in column 6
+    // Detail rows: non-empty first column and term in column 8
     let detail_rows: Vec<_> = rows.iter().filter(|r| {
         r.get(0).map_or(false, |s| !s.is_empty()) &&
-        r.get(6).map_or(false, |s| s == "short" || s == "long")
+        r.get(8).map_or(false, |s| s == "short" || s == "long")
     }).collect();
 
     assert_eq!(detail_rows.len(), 1, "Tax report should have 1 detail row for Q1");
@@ -211,26 +211,26 @@ fn test_report_totals_match_sum() {
     let (tax, _gaap) = run_report_in_dir("01/01/2024", "12/31/2024", "both", &mut conn);
     let rows = parse_report_rows(&tax);
 
-    // Tax: columns are AcquisitionDate(0), DispositionDate(1), DisposedBtc(2), DisposalFmv(3), Basis(4), Rgl(5), Term(6)
+    // Tax: columns are AcquisitionDate(0), DispositionDate(1), DisposedBtc(2), CostPerBtc(3), DisposalFmvPerBtc(4), DisposalFmv(5), Basis(6), Rgl(7), Term(8)
     let detail_rows: Vec<_> = rows.iter().filter(|r| {
         r.get(0).map_or(false, |s| !s.is_empty()) &&
-        r.get(6).map_or(false, |s| s == "short")
+        r.get(8).map_or(false, |s| s == "short")
     }).collect();
 
     let total_rows: Vec<_> = rows.iter().filter(|r| {
         r.get(0).map_or(false, |s| s.is_empty()) &&
         r.get(2).map_or(false, |s| !s.is_empty()) &&
-        r.get(6).map_or(false, |s| s == "short")
+        r.get(8).map_or(false, |s| s == "short")
     }).collect();
 
     assert!(!detail_rows.is_empty(), "Should have detail rows");
     assert!(!total_rows.is_empty(), "Should have totals row");
 
-    // rgl is column 5 in tax report
+    // rgl is column 7 in tax report
     let detail_sum: Decimal = detail_rows.iter()
-        .map(|r| Decimal::from_str(r.get(5).unwrap()).unwrap())
+        .map(|r| Decimal::from_str(r.get(7).unwrap()).unwrap())
         .sum();
-    let total_rgl = Decimal::from_str(total_rows[0].get(5).unwrap()).unwrap();
+    let total_rgl = Decimal::from_str(total_rows[0].get(7).unwrap()).unwrap();
 
     assert_eq!(detail_sum, total_rgl, "Sum of detail rgl should equal total rgl");
 }
@@ -251,13 +251,13 @@ fn test_report_disposal_fmv_minus_basis_equals_rgl() {
 
     let detail_rows: Vec<_> = rows.iter().filter(|r| {
         r.get(0).map_or(false, |s| !s.is_empty()) &&
-        r.get(6).map_or(false, |s| s == "short" || s == "long")
+        r.get(8).map_or(false, |s| s == "short" || s == "long")
     }).collect();
 
     for row in &detail_rows {
-        let disposal_fmv = Decimal::from_str(row.get(3).unwrap()).unwrap();
-        let basis = Decimal::from_str(row.get(4).unwrap()).unwrap();
-        let rgl = Decimal::from_str(row.get(5).unwrap()).unwrap();
+        let disposal_fmv = Decimal::from_str(row.get(5).unwrap()).unwrap();
+        let basis = Decimal::from_str(row.get(6).unwrap()).unwrap();
+        let rgl = Decimal::from_str(row.get(7).unwrap()).unwrap();
 
         assert_eq!(
             disposal_fmv - basis, rgl,
@@ -283,22 +283,23 @@ fn test_gaap_report_has_fmv_disposed_column() {
     // Parse header
     let mut rdr = csv::Reader::from_reader(gaap.as_bytes());
     let headers = rdr.headers().unwrap().clone();
-    // GAAP columns: AcquisitionDate(0), DispositionDate(1), DisposedBtc(2), DisposalFmv(3),
-    //               CostBasis(4), Basis(5), FmvDisposed(6), Rgl(7), Term(8)
-    assert_eq!(headers.get(4).unwrap(), "CostBasis", "GAAP report should have CostBasis at column 4");
-    assert_eq!(headers.get(6).unwrap(), "FmvDisposed", "GAAP report should have FmvDisposed at column 6");
+    // GAAP columns: AcquisitionDate(0), DispositionDate(1), DisposedBtc(2), CostPerBtc(3),
+    //               DisposalFmvPerBtc(4), GaapPerBtc(5), DisposalFmv(6), CostBasis(7),
+    //               Basis(8), FmvDisposed(9), Rgl(10), Term(11)
+    assert_eq!(headers.get(7).unwrap(), "CostBasis", "GAAP report should have CostBasis at column 7");
+    assert_eq!(headers.get(9).unwrap(), "FmvDisposed", "GAAP report should have FmvDisposed at column 9");
 
     // Without MTM, fmv_disposed should be 0 and cost_basis should equal basis
     let rows: Vec<csv::StringRecord> = rdr.records().filter_map(|r| r.ok()).collect();
     let detail_rows: Vec<_> = rows.iter().filter(|r| {
         r.get(0).map_or(false, |s| !s.is_empty()) &&
-        r.get(8).map_or(false, |s| s == "short" || s == "long")
+        r.get(11).map_or(false, |s| s == "short" || s == "long")
     }).collect();
 
     for row in &detail_rows {
-        let cost_basis = Decimal::from_str(row.get(4).unwrap()).unwrap();
-        let basis = Decimal::from_str(row.get(5).unwrap()).unwrap();
-        let fmv_disposed = Decimal::from_str(row.get(6).unwrap()).unwrap();
+        let cost_basis = Decimal::from_str(row.get(7).unwrap()).unwrap();
+        let basis = Decimal::from_str(row.get(8).unwrap()).unwrap();
+        let fmv_disposed = Decimal::from_str(row.get(9).unwrap()).unwrap();
         assert_eq!(fmv_disposed, Decimal::from(0), "FmvDisposed should be 0 when no MTM has been run");
         assert_eq!(cost_basis, basis, "CostBasis should equal Basis when no MTM has been run");
     }
@@ -320,8 +321,8 @@ fn test_tax_report_has_no_fmv_disposed_column() {
     let mut rdr = csv::Reader::from_reader(tax.as_bytes());
     let headers = rdr.headers().unwrap().clone();
 
-    // Tax report: 7 columns, no FmvDisposed
-    assert_eq!(headers.len(), 7, "Tax report should have 7 columns");
+    // Tax report: 9 columns, no FmvDisposed
+    assert_eq!(headers.len(), 9, "Tax report should have 9 columns");
     let header_names: Vec<&str> = (0..headers.len()).map(|i| headers.get(i).unwrap()).collect();
     assert!(!header_names.contains(&"FmvDisposed"), "Tax report should NOT have FmvDisposed column");
 }

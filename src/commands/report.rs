@@ -70,10 +70,15 @@ pub fn report_tax_term(wtr: &mut Writer<File>, beg: NaiveDateTime, end: NaiveDat
         let sats_dec = Decimal::from_i64(acq_disp.2.satoshis).unwrap() / dec!(100_000_000);
         let basis = (Decimal::from_i64(acq_disp.2.basis).unwrap() / dec!(100)).round_dp_with_strategy(2, RoundingStrategy::MidpointAwayFromZero);
 
+        let cost_per_btc = (Decimal::from_i64(acq_disp.1.usd_cents_btc_basis).unwrap() / dec!(100)).round_dp_with_strategy(2, RoundingStrategy::MidpointAwayFromZero);
+        let disposal_fmv_per_btc = (Decimal::from_i64(acq_disp.0.usd_cents_btc_basis).unwrap() / dec!(100)).round_dp_with_strategy(2, RoundingStrategy::MidpointAwayFromZero);
+
         let rgl = TaxRGL {
             acquisition_date: acq_disp.1.acquisition_date,
             disposition_date: acq_disp.0.disposition_date,
             disposed_btc: sats_dec,
+            cost_per_btc,
+            disposal_fmv_per_btc,
             disposal_fmv: (sats_dec * Decimal::from_i64(acq_disp.0.usd_cents_btc_basis).unwrap() / dec!(100)).round_dp_with_strategy(2, RoundingStrategy::MidpointAwayFromZero),
             basis,
             rgl: (Decimal::from_i64(acq_disp.2.rgl).unwrap() / dec!(100)).round_dp_with_strategy(2, RoundingStrategy::MidpointAwayFromZero),
@@ -95,6 +100,8 @@ pub fn report_tax_term(wtr: &mut Writer<File>, beg: NaiveDateTime, end: NaiveDat
                 String::from(""),
                 String::from(""),
                 total_disposed_btc.to_string(),
+                String::from(""),
+                String::from(""),
                 total_disposal_fmv.to_string(),
                 total_basis.to_string(),
                 total_rgl.to_string(),
@@ -102,6 +109,8 @@ pub fn report_tax_term(wtr: &mut Writer<File>, beg: NaiveDateTime, end: NaiveDat
             ]).unwrap();
 
             wtr.write_record(&[
+                String::from(""),
+                String::from(""),
                 String::from(""),
                 String::from(""),
                 String::from(""),
@@ -136,10 +145,17 @@ pub fn report_gaap_term(wtr: &mut Writer<File>, beg: NaiveDateTime, end: NaiveDa
         // This is the MTM adjustment being written off
         let fmv_disposed = (Decimal::from_i64(acq_disp.2.basis - cost_basis_cents).unwrap() / dec!(100)).round_dp_with_strategy(2, RoundingStrategy::MidpointAwayFromZero);
 
+        let cost_per_btc = (Decimal::from_i64(acq_disp.1.usd_cents_btc_basis).unwrap() / dec!(100)).round_dp_with_strategy(2, RoundingStrategy::MidpointAwayFromZero);
+        let disposal_fmv_per_btc = (Decimal::from_i64(acq_disp.0.usd_cents_btc_basis).unwrap() / dec!(100)).round_dp_with_strategy(2, RoundingStrategy::MidpointAwayFromZero);
+        let gaap_per_btc = (Decimal::from_i64(acq_disp.1.usd_cents_btc_fair_value).unwrap() / dec!(100)).round_dp_with_strategy(2, RoundingStrategy::MidpointAwayFromZero);
+
         let rgl = GaapRGL {
             acquisition_date: acq_disp.1.acquisition_date,
             disposition_date: acq_disp.0.disposition_date,
             disposed_btc: sats_dec,
+            cost_per_btc,
+            disposal_fmv_per_btc,
+            gaap_per_btc,
             disposal_fmv: (sats_dec * Decimal::from_i64(acq_disp.0.usd_cents_btc_basis).unwrap() / dec!(100)).round_dp_with_strategy(2, RoundingStrategy::MidpointAwayFromZero),
             cost_basis,
             basis,
@@ -165,6 +181,9 @@ pub fn report_gaap_term(wtr: &mut Writer<File>, beg: NaiveDateTime, end: NaiveDa
                 String::from(""),
                 String::from(""),
                 total_disposed_btc.to_string(),
+                String::from(""),
+                String::from(""),
+                String::from(""),
                 total_disposal_fmv.to_string(),
                 total_cost_basis.to_string(),
                 total_basis.to_string(),
@@ -174,6 +193,9 @@ pub fn report_gaap_term(wtr: &mut Writer<File>, beg: NaiveDateTime, end: NaiveDa
             ]).unwrap();
 
             wtr.write_record(&[
+                String::from(""),
+                String::from(""),
+                String::from(""),
                 String::from(""),
                 String::from(""),
                 String::from(""),
