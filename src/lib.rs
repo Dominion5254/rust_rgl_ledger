@@ -33,13 +33,19 @@ impl Default for LotConfig {
     }
 }
 
-pub fn rounding_div(numerator: i64, denominator: i64) -> i64 {
+pub fn rounding_div(numerator: i128, denominator: i128) -> i64 {
+    assert!(denominator != 0, "rounding_div: division by zero");
     let quotient = numerator / denominator;
-    let remainder = numerator % denominator;
-    if remainder * 2 >= denominator {
-        quotient + 1
+    let remainder = (numerator % denominator).abs();
+    if remainder * 2 >= denominator.abs() {
+        let positive = (numerator >= 0) == (denominator >= 0);
+        if positive {
+            (quotient + 1) as i64
+        } else {
+            (quotient - 1) as i64
+        }
     } else {
-        quotient
+        quotient as i64
     }
 }
 

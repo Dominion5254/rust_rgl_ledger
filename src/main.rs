@@ -11,9 +11,9 @@ use rust_rgl_ledger::commands::transfer::transfer;
 fn main() {
     let command = Cli::parse();
     let conn = &mut establish_connection();
-    let config = load_lot_config();
     match command.subcommand {
         Command::Import { file } => {
+            let config = load_lot_config();
             if config.tax_lot_scope == "universal" {
                 println!("WARNING: TAX_LOT_SCOPE is set to 'universal'. Universal scope is not a valid method for tax lot relief.");
                 print!("Do you want to proceed? (y/N): ");

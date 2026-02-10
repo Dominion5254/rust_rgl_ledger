@@ -138,7 +138,7 @@ pub fn report_gaap_term(wtr: &mut Writer<File>, beg: NaiveDateTime, end: NaiveDa
         let basis = (Decimal::from_i64(acq_disp.2.basis).unwrap() / dec!(100)).round_dp_with_strategy(2, RoundingStrategy::MidpointAwayFromZero);
 
         // Cost basis for the disposed sats (original acquisition price)
-        let cost_basis_cents = rounding_div(acq_disp.2.satoshis * acq_disp.1.usd_cents_btc_basis, 100_000_000);
+        let cost_basis_cents = rounding_div(acq_disp.2.satoshis as i128 * acq_disp.1.usd_cents_btc_basis as i128, 100_000_000);
         let cost_basis = (Decimal::from_i64(cost_basis_cents).unwrap() / dec!(100)).round_dp_with_strategy(2, RoundingStrategy::MidpointAwayFromZero);
 
         // FMV Disposed = fair value basis - cost basis for same sats

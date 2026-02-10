@@ -158,7 +158,7 @@ fn test_term_long() {
 
 #[test]
 fn test_term_boundary() {
-    // 364 days = short
+    // Exactly 365 days = short (IRS "more than one year" means > 365)
     let mut conn = setup_test_db();
     let config = default_config();
     let csv = create_test_csv(&[
@@ -167,17 +167,17 @@ fn test_term_boundary() {
     ]);
     import_transactions(&csv.path().to_path_buf(), &mut conn, &config).unwrap();
     let tax_ads = get_tax_acq_disps(&mut conn);
-    assert_eq!(tax_ads[0].term, "long");
+    assert_eq!(tax_ads[0].term, "short");
 
-    // Exactly 364 days = short
+    // 366 days = long
     let mut conn2 = setup_test_db();
     let csv2 = create_test_csv(&[
         ("01/01/2024", "1.00000000", "$40,000.00"),
-        ("12/30/2024", "-1.00000000", "$45,000.00"), // 364 days
+        ("01/01/2025", "-1.00000000", "$45,000.00"), // 366 days (leap year)
     ]);
     import_transactions(&csv2.path().to_path_buf(), &mut conn2, &config).unwrap();
     let tax_ads2 = get_tax_acq_disps(&mut conn2);
-    assert_eq!(tax_ads2[0].term, "short");
+    assert_eq!(tax_ads2[0].term, "long");
 }
 
 #[test]

@@ -129,7 +129,7 @@ fn test_transfer_with_diverged_trackers() {
     let lot_c = acqs.iter().find(|a| a.wallet == "wallet-c").unwrap();
 
     // Proportional GAAP split: transferred_gaap = rounding_div(gaap_before * 50M, tax_before)
-    let expected_transferred_gaap = rust_rgl_ledger::rounding_div(gaap_before * 50_000_000, tax_before);
+    let expected_transferred_gaap = rust_rgl_ledger::rounding_div(gaap_before as i128 * 50_000_000i128, tax_before as i128);
     assert_eq!(lot_c.undisposed_satoshis, expected_transferred_gaap);
     assert_eq!(lot_c.tax_undisposed_satoshis, 50_000_000);
 

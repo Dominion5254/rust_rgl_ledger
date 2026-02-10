@@ -1,5 +1,5 @@
 use std::path::PathBuf;
-use chrono::{NaiveDate, NaiveDateTime};
+use chrono::NaiveDateTime;
 use diesel::prelude::*;
 use diesel::sqlite::SqliteConnection;
 use diesel::Connection;
@@ -7,7 +7,7 @@ use rust_decimal::Decimal;
 use serde::Deserialize;
 
 use crate::rounding_div;
-use crate::models::{Acquisition, NewAcquisition};
+use crate::models::{Acquisition, NewAcquisition, parse_date_str};
 use crate::schema::acquisitions;
 
 #[derive(Debug)]
@@ -47,30 +47,6 @@ struct TransferRecord {
     btc: String,
 }
 
-fn parse_date(s: &str) -> Result<NaiveDateTime, String> {
-    let date_formats = [
-        "%m/%d/%y %H:%M:%S",
-        "%m/%d/%Y %H:%M:%S",
-        "%Y-%m-%d %H:%M:%S",
-        "%m/%d/%y %I:%M %p",
-        "%m/%d/%y",
-        "%m/%d/%Y",
-        "%y-%m-%d",
-        "%Y-%m-%d",
-    ];
-
-    for format in &date_formats {
-        if let Ok(parsed_date) = NaiveDateTime::parse_from_str(s, format) {
-            return Ok(parsed_date);
-        }
-        if let Ok(parsed_date) = NaiveDate::parse_from_str(s, format) {
-            return Ok(parsed_date.and_hms_opt(0, 0, 0).expect("Error adding time 00:00:00 to Date"));
-        }
-    }
-
-    Err(format!("Invalid date format: {}", s))
-}
-
 pub fn transfer(file: &PathBuf, conn: &mut SqliteConnection) -> Result<(), String> {
     let mut rdr = csv::Reader::from_path(file)
         .map_err(|e| format!("Error reading file {:?}: {}", file, e))?;
@@ -78,7 +54,7 @@ pub fn transfer(file: &PathBuf, conn: &mut SqliteConnection) -> Result<(), Strin
     let mut records: Vec<(NaiveDateTime, String, String, i64)> = Vec::new();
     for result in rdr.deserialize::<TransferRecord>() {
         let record = result.map_err(|e| format!("Error parsing transfer CSV: {}", e))?;
-        let date = parse_date(&record.date)?;
+        let date = parse_date_str(&record.date)?;
         let btc = Decimal::from_str_exact(&record.btc)
             .map_err(|e| format!("Invalid BTC amount '{}': {}", record.btc, e))?;
         let sats = (btc * Decimal::from(100_000_000i64)).round()
@@ -97,7 +73,7 @@ pub fn transfer(file: &PathBuf, conn: &mut SqliteConnection) -> Result<(), Strin
             let lots: Vec<Acquisition> = acquisitions::table
                 .filter(acquisitions::wallet.eq(from_wallet))
                 .filter(acquisitions::tax_undisposed_satoshis.gt(0))
-                .order(acquisitions::acquisition_date.asc())
+                .order((acquisitions::acquisition_date.asc(), acquisitions::id.asc()))
                 .select(Acquisition::as_select())
                 .load(conn)
                 .map_err(|e| format!("Error querying lots: {}", e))?;
@@ -132,12 +108,12 @@ pub fn transfer(file: &PathBuf, conn: &mut SqliteConnection) -> Result<(), Strin
                     let transfer_sats_from_lot = remaining;
 
                     let transferred_gaap = rounding_div(
-                        lot.undisposed_satoshis * transfer_sats_from_lot,
-                        tax_undisposed,
+                        lot.undisposed_satoshis as i128 * transfer_sats_from_lot as i128,
+                        tax_undisposed as i128,
                     );
                     let transferred_satoshis = rounding_div(
-                        lot.satoshis * transfer_sats_from_lot,
-                        tax_undisposed,
+                        lot.satoshis as i128 * transfer_sats_from_lot as i128,
+                        tax_undisposed as i128,
                     );
 
                     // Update original lot (stays in from_wallet): reduce by transferred amounts

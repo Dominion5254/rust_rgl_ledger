@@ -47,10 +47,7 @@ pub struct NewRecord {
     pub wallet: String,
 }
 
-pub fn deserialize_date<'de, D>(deserializer: D) -> Result<NaiveDateTime, D::Error>
-where
-    D: Deserializer<'de>,
-{
+pub fn parse_date_str(s: &str) -> Result<NaiveDateTime, String> {
     let date_formats = [
         "%m/%d/%y %H:%M:%S",
         "%m/%d/%Y %H:%M:%S",
@@ -62,18 +59,24 @@ where
         "%Y-%m-%d",
     ];
 
-    let date_str = String::deserialize(deserializer)?;
-
     for format in &date_formats {
-        if let Ok(parsed_date) = NaiveDateTime::parse_from_str(&date_str, format) {
+        if let Ok(parsed_date) = NaiveDateTime::parse_from_str(s, format) {
             return Ok(parsed_date);
         }
-        if let Ok(parsed_date) = NaiveDate::parse_from_str(&date_str, format) {
+        if let Ok(parsed_date) = NaiveDate::parse_from_str(s, format) {
             return Ok(parsed_date.and_hms_opt(0, 0, 0).expect("Error adding time 00:00:00 to Date"));
         }
     }
 
-    Err(de::Error::custom(format!("Invalid date format: {}", date_str)))
+    Err(format!("Invalid date format: {}", s))
+}
+
+pub fn deserialize_date<'de, D>(deserializer: D) -> Result<NaiveDateTime, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    let date_str = String::deserialize(deserializer)?;
+    parse_date_str(&date_str).map_err(de::Error::custom)
 }
 
 pub fn deserialize_price<'de, D>(deserializer: D) -> Result<i64, D::Error>

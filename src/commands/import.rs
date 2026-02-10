@@ -125,7 +125,7 @@ fn fifo_match(
             let acq_lot: Acquisition = if match_type == "gaap" {
                 let mut query = acquisitions::table
                     .filter(acquisitions::undisposed_satoshis.gt(0))
-                    .order(acquisitions::acquisition_date.asc())
+                    .order((acquisitions::acquisition_date.asc(), acquisitions::id.asc()))
                     .into_boxed();
                 if scope == "wallet" {
                     query = query.filter(acquisitions::wallet.eq(&disp_lot.wallet));
@@ -153,7 +153,7 @@ fn fifo_match(
             } else {
                 let mut query = acquisitions::table
                     .filter(acquisitions::tax_undisposed_satoshis.gt(0))
-                    .order(acquisitions::acquisition_date.asc())
+                    .order((acquisitions::acquisition_date.asc(), acquisitions::id.asc()))
                     .into_boxed();
                 if scope == "wallet" {
                     query = query.filter(acquisitions::wallet.eq(&disp_lot.wallet));
@@ -194,8 +194,8 @@ fn fifo_match(
                 acq_lot.usd_cents_btc_basis
             };
 
-            let basis: i64 = rounding_div(sats_disposed * price_per_btc, 100_000_000);
-            let fv_disposed_cents = rounding_div(sats_disposed * disp_lot.usd_cents_btc_basis, 100_000_000);
+            let basis: i64 = rounding_div(sats_disposed as i128 * price_per_btc as i128, 100_000_000);
+            let fv_disposed_cents = rounding_div(sats_disposed as i128 * disp_lot.usd_cents_btc_basis as i128, 100_000_000);
             let rgl = fv_disposed_cents - basis;
             let term = disp_lot.disposition_date - acq_lot.acquisition_date;
 
@@ -214,7 +214,7 @@ fn fifo_match(
                 satoshis: sats_disposed,
                 basis,
                 rgl,
-                term: if term.num_days() >= 365 { String::from("long") } else { String::from("short") },
+                term: if term.num_days() > 365 { String::from("long") } else { String::from("short") },
             };
 
             // Update the appropriate undisposed tracker
