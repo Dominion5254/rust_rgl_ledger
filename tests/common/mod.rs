@@ -25,7 +25,6 @@ pub fn universal_config() -> rust_rgl_ledger::LotConfig {
         tax_lot_method: "fifo".to_string(),
         tax_lot_scope: "universal".to_string(),
         gaap_lot_method: "fifo".to_string(),
-        gaap_lot_scope: "universal".to_string(),
     }
 }
 
@@ -63,6 +62,19 @@ pub fn create_bucket_csv(records: &[(&str, &str)]) -> NamedTempFile {
     writeln!(file, "Wallet,BTC").unwrap();
     for (wallet, btc) in records {
         writeln!(file, "{},{}", wallet, btc).unwrap();
+    }
+    file.flush().unwrap();
+    file
+}
+
+pub fn create_transfer_csv(records: &[(&str, &str, &str, &str)]) -> NamedTempFile {
+    let mut file = tempfile::Builder::new()
+        .suffix(".csv")
+        .tempfile()
+        .expect("Failed to create temp CSV file");
+    writeln!(file, "Date,From,To,BTC").unwrap();
+    for (date, from, to, btc) in records {
+        writeln!(file, "{},{},{},{}", date, from, to, btc).unwrap();
     }
     file.flush().unwrap();
     file

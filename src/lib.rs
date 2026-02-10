@@ -21,7 +21,6 @@ pub struct LotConfig {
     pub tax_lot_method: String,
     pub tax_lot_scope: String,
     pub gaap_lot_method: String,
-    pub gaap_lot_scope: String,
 }
 
 impl Default for LotConfig {
@@ -30,7 +29,6 @@ impl Default for LotConfig {
             tax_lot_method: "fifo".to_string(),
             tax_lot_scope: "wallet".to_string(),
             gaap_lot_method: "fifo".to_string(),
-            gaap_lot_scope: "universal".to_string(),
         }
     }
 }
@@ -51,7 +49,6 @@ pub fn load_lot_config() -> LotConfig {
         tax_lot_method: env::var("TAX_LOT_METHOD").unwrap_or_else(|_| "fifo".to_string()),
         tax_lot_scope: env::var("TAX_LOT_SCOPE").unwrap_or_else(|_| "wallet".to_string()),
         gaap_lot_method: env::var("GAAP_LOT_METHOD").unwrap_or_else(|_| "fifo".to_string()),
-        gaap_lot_scope: env::var("GAAP_LOT_SCOPE").unwrap_or_else(|_| "universal".to_string()),
     };
 
     if config.tax_lot_method != "fifo" {
@@ -62,9 +59,6 @@ pub fn load_lot_config() -> LotConfig {
     }
     if !["wallet", "universal"].contains(&config.tax_lot_scope.as_str()) {
         panic!("Unsupported TAX_LOT_SCOPE '{}'. Must be 'wallet' or 'universal'.", config.tax_lot_scope);
-    }
-    if !["wallet", "universal"].contains(&config.gaap_lot_scope.as_str()) {
-        panic!("Unsupported GAAP_LOT_SCOPE '{}'. Must be 'wallet' or 'universal'.", config.gaap_lot_scope);
     }
 
     config

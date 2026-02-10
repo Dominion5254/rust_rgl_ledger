@@ -1,3 +1,4 @@
+use std::io::{self, Write};
 use clap::{Parser, Subcommand};
 use rust_rgl_ledger::{establish_connection, load_lot_config};
 use rust_rgl_ledger::commands::import::import_transactions;
@@ -5,6 +6,7 @@ use rust_rgl_ledger::commands::report::report;
 use rust_rgl_ledger::commands::holdings::holdings;
 use rust_rgl_ledger::commands::mark_to_market::mark_to_market;
 use rust_rgl_ledger::commands::allocate::allocate;
+use rust_rgl_ledger::commands::transfer::transfer;
 
 fn main() {
     let command = Cli::parse();
@@ -12,6 +14,17 @@ fn main() {
     let config = load_lot_config();
     match command.subcommand {
         Command::Import { file } => {
+            if config.tax_lot_scope == "universal" {
+                println!("WARNING: TAX_LOT_SCOPE is set to 'universal'. Universal scope is not a valid method for tax lot relief.");
+                print!("Do you want to proceed? (y/N): ");
+                io::stdout().flush().unwrap();
+                let mut input = String::new();
+                io::stdin().read_line(&mut input).unwrap();
+                if !input.trim().eq_ignore_ascii_case("y") {
+                    println!("Import cancelled.");
+                    return;
+                }
+            }
             match import_transactions(&file, conn, &config) {
                 Ok(_) => {
                     println!("Successfully Imported transactions from {:?}", file)
@@ -62,6 +75,16 @@ fn main() {
                 }
             }
         },
+        Command::Transfer { file } => {
+            match transfer(&file, conn) {
+                Ok(_) => {
+                    println!("Successfully transferred lots from {:?}", file)
+                }
+                Err(e) => {
+                    eprint!("Error transferring lots: {}", e)
+                }
+            }
+        },
     }
 }
 
@@ -106,6 +129,12 @@ enum Command {
     /// Allocate existing lots to wallets using a bucket CSV
     Allocate {
         /// The bucket CSV file with columns: Wallet, BTC
+        #[clap(long, short)]
+        file: std::path::PathBuf,
+    },
+    /// Transfer BTC between wallets using a transfer CSV
+    Transfer {
+        /// The transfer CSV file with columns: Date, From, To, BTC
         #[clap(long, short)]
         file: std::path::PathBuf,
     },

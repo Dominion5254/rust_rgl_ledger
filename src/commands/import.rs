@@ -82,7 +82,7 @@ pub fn import_transactions(file: &PathBuf, conn: &mut SqliteConnection, config: 
         }
 
         // GAAP matching pass
-        fifo_match(conn, "gaap", &config.gaap_lot_scope, true)?;
+        fifo_match(conn, "gaap", "universal", true)?;
 
         // Tax matching pass
         fifo_match(conn, "tax", &config.tax_lot_scope, false)?;
